@@ -59,6 +59,32 @@ apt-get install -y \
     postgresql \
     postgresql-contrib
 
+# ============================================================
+# Install .NET SDK 9
+# ============================================================
+
+echo
+echo "Installing .NET SDK 9..."
+
+apt-get update
+
+apt-get install -y \
+    software-properties-common \
+    ca-certificates
+
+add-apt-repository -y ppa:dotnet/backports
+
+apt-get update
+
+apt-get install -y dotnet-sdk-9.0
+
+echo
+echo ".NET SDK version:"
+dotnet --version
+
+echo
+echo "Installed SDKs:"
+dotnet --list-sdks
 
 # ============================================================
 # 2. Check Java and detect JAVA_HOME
