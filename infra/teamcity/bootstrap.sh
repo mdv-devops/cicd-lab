@@ -26,6 +26,9 @@ DB_NAME="teamcity"
 DB_USER="teamcity"
 DB_PASSWORD_FILE="/etc/teamcity/db-password"
 
+SONAR_SCANNER_HOME="/opt/sonarscanner"
+SONAR_SCANNER_VERSION="11.3.0"
+
 JAVA_HOME=""
 
 
@@ -87,6 +90,46 @@ echo "Installed SDKs:"
 dotnet --list-sdks
 
 # ============================================================
+# Install SonarScanner for .NET
+# ============================================================
+
+echo
+echo "Installing SonarScanner for .NET ${SONAR_SCANNER_VERSION}..."
+
+mkdir -p "${SONAR_SCANNER_HOME}"
+
+# Pin the tool version to keep Vagrant provisioning reproducible.
+# Upgrade an older tool if a different version was installed previously.
+INSTALLED_SCANNER_VERSION="$(
+    dotnet tool list --tool-path "${SONAR_SCANNER_HOME}" \
+        | awk '$1 == "dotnet-sonarscanner" {print $2}'
+)"
+
+if [ -z "${INSTALLED_SCANNER_VERSION}" ]; then
+    dotnet tool install \
+        --tool-path "${SONAR_SCANNER_HOME}" \
+        --version "${SONAR_SCANNER_VERSION}" \
+        dotnet-sonarscanner
+elif [ "${INSTALLED_SCANNER_VERSION}" != "${SONAR_SCANNER_VERSION}" ]; then
+    echo "Updating SonarScanner ${INSTALLED_SCANNER_VERSION} -> ${SONAR_SCANNER_VERSION}..."
+    dotnet tool update \
+        --tool-path "${SONAR_SCANNER_HOME}" \
+        --version "${SONAR_SCANNER_VERSION}" \
+        dotnet-sonarscanner
+else
+    echo "SonarScanner ${SONAR_SCANNER_VERSION} already installed."
+fi
+
+chmod -R a+rX "${SONAR_SCANNER_HOME}"
+
+ln -sfn \
+    "${SONAR_SCANNER_HOME}/dotnet-sonarscanner" \
+    /usr/local/bin/dotnet-sonarscanner
+
+echo "SonarScanner installed:"
+dotnet tool list --tool-path "${SONAR_SCANNER_HOME}"
+
+# ============================================================
 # 2. Check Java and detect JAVA_HOME
 # ============================================================
 
@@ -135,6 +178,27 @@ if ! id "${TEAMCITY_USER}" >/dev/null 2>&1; then
 
 fi
 
+
+# ============================================================
+# Verify SonarScanner as TeamCity user
+# ============================================================
+
+echo
+echo "Checking SonarScanner as ${TEAMCITY_USER}..."
+
+SCANNER_OUTPUT="$(
+    runuser -u "${TEAMCITY_USER}" -- \
+        /usr/local/bin/dotnet-sonarscanner --version 2>&1
+)" || true
+
+echo "${SCANNER_OUTPUT}"
+
+if ! grep -q "SonarScanner for .NET" <<< "${SCANNER_OUTPUT}"; then
+    echo "ERROR: SonarScanner verification failed."
+    exit 1
+fi
+
+echo "SonarScanner installation OK."
 
 # ============================================================
 # 4. Configure PostgreSQL
@@ -630,7 +694,6 @@ systemctl enable teamcity-agent
 
 systemctl restart teamcity-agent
 
-
 # ============================================================
 # Final information
 # ============================================================
@@ -658,6 +721,11 @@ echo
 echo "Build Agent:"
 echo "  Name:    ${TEAMCITY_AGENT_NAME}"
 echo "  Home:    ${TEAMCITY_AGENT_HOME}"
+echo
+echo "SonarScanner:"
+echo "  Version: ${SONAR_SCANNER_VERSION}"
+echo "  Home:    ${SONAR_SCANNER_HOME}"
+echo "  Binary:  /usr/local/bin/dotnet-sonarscanner"
 echo
 
 echo "PostgreSQL:"
