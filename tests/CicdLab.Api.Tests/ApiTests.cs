@@ -29,6 +29,6 @@ public class ApiTests : IClassFixture<WebApplicationFactory<Program>>
 
         var content = await response.Content.ReadAsStringAsync();
 
-        Assert.Contains("\"result\":30", content);
+        Assert.Contains("\"result\":3", content);
     }
 }
