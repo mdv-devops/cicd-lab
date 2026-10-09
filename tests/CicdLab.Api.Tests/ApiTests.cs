@@ -31,7 +31,7 @@ public class ApiTests : IClassFixture<WebApplicationFactory<Program>>
         var result = await response.Content.ReadFromJsonAsync<SumResponse>();
 
         Assert.NotNull(result);
-        Assert.Equal(3, result.Result);
+        Assert.Equal(30, result.Result);
     }
 
     private record SumResponse(int A, int B, int Result);
