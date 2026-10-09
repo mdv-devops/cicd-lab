@@ -28,6 +28,11 @@ app.MapGet("/api/sum/{a:int}/{b:int}", (int a, int b) =>
     });
 });
 
+app.MapGet("/api/hello", () => Results.Ok(new
+{
+    message = "Hello from CI/CD lab"
+}));
+
 app.Run();
 
 public partial class Program { }
