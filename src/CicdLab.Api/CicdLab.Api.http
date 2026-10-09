@@ -1,0 +1,6 @@
+@CicdLab.Api_HostAddress = http://localhost:5178
+
+GET {{CicdLab.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
