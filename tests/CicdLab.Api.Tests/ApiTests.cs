@@ -35,4 +35,19 @@ public class ApiTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     private record SumResponse(int A, int B, int Result);
+
+    [Fact]
+    public async Task Multiply_ReturnsCorrectResult()
+    {
+        var response = await _client.GetAsync("/api/multiply?a=6&b=7");
+
+        response.EnsureSuccessStatusCode();
+
+        var result = await response.Content.ReadFromJsonAsync<MultiplyResponse>();
+
+        Assert.NotNull(result);
+        Assert.Equal(42, result.Result);
+    }
+
+    private record MultiplyResponse(int Result);
 }
