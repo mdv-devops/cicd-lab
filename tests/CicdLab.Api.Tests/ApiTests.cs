@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace CicdLab.Api.Tests;
@@ -27,8 +28,11 @@ public class ApiTests : IClassFixture<WebApplicationFactory<Program>>
 
         response.EnsureSuccessStatusCode();
 
-        var content = await response.Content.ReadAsStringAsync();
+        var result = await response.Content.ReadFromJsonAsync<SumResponse>();
 
-        Assert.Contains("\"result\":3", content);
+        Assert.NotNull(result);
+        Assert.Equal(30, result.Result);
     }
+
+    private record SumResponse(int A, int B, int Result);
 }
