@@ -9,7 +9,8 @@ export DEBIAN_FRONTEND=noninteractive
 # Configuration
 # ============================================================
 
-SONAR_VERSION="26.9.0.129388"
+SONAR_VERSION="26.5.0.122743"
+SONAR_PLUGIN_VERSION="26.5.0"
 
 SONAR_HOME="/opt/sonarqube"
 SONAR_USER="sonarqube"
@@ -299,6 +300,56 @@ chown \
     "${SONAR_CONFIG}"
 
 chmod 600 "${SONAR_CONFIG}"
+
+# ============================================================
+# Install SonarQube Community Branch Plugin
+# ============================================================
+
+echo "Installing Community Branch Plugin..."
+
+PLUGIN_DIR="${SONAR_HOME}/extensions/plugins"
+PLUGIN_JAR="sonarqube-community-branch-plugin-${SONAR_PLUGIN_VERSION}.jar"
+
+PLUGIN_URL="https://github.com/mc1arke/sonarqube-community-branch-plugin/releases/download/${SONAR_PLUGIN_VERSION}"
+
+mkdir -p "${PLUGIN_DIR}"
+
+DOWNLOAD_DIR="$(mktemp -d)"
+
+curl -fL --retry 5 \
+    -o "${DOWNLOAD_DIR}/${PLUGIN_JAR}" \
+    "${PLUGIN_URL}/${PLUGIN_JAR}"
+
+curl -fL --retry 5 \
+    -o "${DOWNLOAD_DIR}/sonarqube-webapp.zip" \
+    "${PLUGIN_URL}/sonarqube-webapp.zip"
+
+install \
+    -o "${SONAR_USER}" \
+    -g "${SONAR_GROUP}" \
+    -m 0644 \
+    "${DOWNLOAD_DIR}/${PLUGIN_JAR}" \
+    "${PLUGIN_DIR}/${PLUGIN_JAR}"
+
+# Replace SonarQube web application files
+unzip -oq \
+    "${DOWNLOAD_DIR}/sonarqube-webapp.zip" \
+    -d "${SONAR_HOME}/web"
+
+chown -R "${SONAR_USER}:${SONAR_GROUP}" \
+    "${SONAR_HOME}/web" \
+    "${PLUGIN_DIR}"
+
+rm -rf "${DOWNLOAD_DIR}"
+
+# Configure Java agents
+cat >> "${SONAR_CONFIG}" <<EOF
+
+# BEGIN COMMUNITY BRANCH PLUGIN
+sonar.web.javaAdditionalOpts=-javaagent:./extensions/plugins/${PLUGIN_JAR}=web
+sonar.ce.javaAdditionalOpts=-javaagent:./extensions/plugins/${PLUGIN_JAR}=ce
+# END COMMUNITY BRANCH PLUGIN
+EOF
 
 # ============================================================
 # 8. Create systemd service
