@@ -33,6 +33,14 @@ app.MapGet("/api/hello", () => Results.Ok(new
     message = "Hello from CI/CD lab"
 }));
 
+app.MapGet("/api/multiply", (int a, int b) =>
+{
+    return Results.Ok(new
+    {
+        result = a * b
+    });
+});
+
 app.Run();
 
 public partial class Program { }
