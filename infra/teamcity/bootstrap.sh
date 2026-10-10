@@ -130,6 +130,39 @@ echo "SonarScanner installed:"
 dotnet tool list --tool-path "${SONAR_SCANNER_HOME}"
 
 # ============================================================
+# Install ReportGenerator
+# ============================================================
+
+REPORTGENERATOR_HOME="/opt/reportgenerator"
+
+echo
+echo "Installing ReportGenerator..."
+
+mkdir -p "${REPORTGENERATOR_HOME}"
+
+INSTALLED_REPORTGENERATOR_VERSION="$(
+    dotnet tool list --tool-path "${REPORTGENERATOR_HOME}" \
+        | awk '$1 == "dotnet-reportgenerator-globaltool" {print $2}'
+)"
+
+if [ -z "${INSTALLED_REPORTGENERATOR_VERSION}" ]; then
+    dotnet tool install \
+        --tool-path "${REPORTGENERATOR_HOME}" \
+        dotnet-reportgenerator-globaltool
+else
+    echo "ReportGenerator ${INSTALLED_REPORTGENERATOR_VERSION} already installed."
+fi
+
+chmod -R a+rX "${REPORTGENERATOR_HOME}"
+
+ln -sfn \
+    "${REPORTGENERATOR_HOME}/reportgenerator" \
+    /usr/local/bin/reportgenerator
+
+echo "ReportGenerator installed:"
+dotnet tool list --tool-path "${REPORTGENERATOR_HOME}"
+
+# ============================================================
 # 2. Check Java and detect JAVA_HOME
 # ============================================================
 
