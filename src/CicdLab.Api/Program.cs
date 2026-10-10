@@ -87,6 +87,16 @@ app.MapGet("/api/hello-sonar", () => Results.Ok(new
     timestamp = DateTime.UtcNow
 }));
 
+app.MapGet("/api/check/{value:int}", (int value) =>
+{
+    if (value > 100)
+    {
+        return Results.Ok(new { message = "High value" });
+    }
+
+    return Results.Ok(new { message = "Low value" });
+});
+
 await app.RunAsync();
 
 public partial class Program
