@@ -97,6 +97,14 @@ app.MapGet("/api/check/{value:int}", (int value) =>
     return Results.Ok(new { message = "Low value" });
 });
 
+app.MapGet("/api/subtract/{a:int}/{b:int}", (int a, int b) =>
+{
+    return Results.Ok(new
+    {
+        result = a - b
+    });
+});
+
 await app.RunAsync();
 
 public partial class Program
