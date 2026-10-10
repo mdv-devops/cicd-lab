@@ -57,6 +57,28 @@ app.MapGet("/api/divide/{a:int}/{b:int}", (int a, int b) =>
     });
 });
 
+app.MapGet("/api/statistics/{a:int}/{b:int}", (int a, int b) =>
+{
+    var sum = a + b;
+    var difference = a - b;
+    var product = a * b;
+
+    var maximum = a > b ? a : b;
+    var minimum = a < b ? a : b;
+
+    var average = (a + b) / 2.0;
+
+    return Results.Ok(new
+    {
+        sum,
+        difference,
+        product,
+        maximum,
+        minimum,
+        average
+    });
+});
+
 app.Run();
 
 public partial class Program { }
