@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
+using System.Text.Json;
 
 namespace CicdLab.Api.Tests;
 
@@ -117,6 +118,25 @@ public class ApiTests : IClassFixture<WebApplicationFactory<Program>>
         int Maximum,
         int Minimum,
         double Average);
+
+    [Theory]
+    [InlineData(150, "High value")]
+    [InlineData(50, "Low value")]
+    public async Task Check_ReturnsCorrectMessage(int value, string expected)
+    {
+        var response = await _client.GetAsync($"/api/check/{value}");
+
+        response.EnsureSuccessStatusCode();
+
+        using var json = JsonDocument.Parse(
+            await response.Content.ReadAsStringAsync()
+        );
+
+        Assert.Equal(
+            expected,
+            json.RootElement.GetProperty("message").GetString()
+        );
+    }
 
     private record DivideResponse(double Result);
     private record ErrorResponse(string Error);
