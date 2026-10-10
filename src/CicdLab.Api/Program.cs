@@ -79,6 +79,11 @@ app.MapGet("/api/statistics/{a:int}/{b:int}", (int a, int b) =>
     });
 });
 
-app.Run();
+await app.RunAsync();
 
-public partial class Program { }
+public partial class Program
+{
+    private Program()
+    {
+    }
+}
