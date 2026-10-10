@@ -80,6 +80,44 @@ public class ApiTests : IClassFixture<WebApplicationFactory<Program>>
         );
     }
 
+    [Theory]
+    [InlineData(10, 5, 15, 5, 50, 10, 5, 7.5)]
+    [InlineData(3, 8, 11, -5, 24, 8, 3, 5.5)]
+    [InlineData(-4, -2, -6, -2, 8, -2, -4, -3.0)]
+    public async Task Statistics_ReturnsCorrectResults(
+        int a,
+        int b,
+        int sum,
+        int difference,
+        int product,
+        int maximum,
+        int minimum,
+        double average)
+    {
+        var response = await _client.GetAsync($"/api/statistics/{a}/{b}");
+
+        response.EnsureSuccessStatusCode();
+
+        var result = await response.Content
+            .ReadFromJsonAsync<StatisticsResponse>();
+
+        Assert.NotNull(result);
+        Assert.Equal(sum, result.Sum);
+        Assert.Equal(difference, result.Difference);
+        Assert.Equal(product, result.Product);
+        Assert.Equal(maximum, result.Maximum);
+        Assert.Equal(minimum, result.Minimum);
+        Assert.Equal(average, result.Average);
+    }
+
+    private record StatisticsResponse(
+        int Sum,
+        int Difference,
+        int Product,
+        int Maximum,
+        int Minimum,
+        double Average);
+
     private record DivideResponse(double Result);
     private record ErrorResponse(string Error);
     private record MultiplyResponse(int Result);
