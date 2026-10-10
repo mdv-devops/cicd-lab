@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 var builder = WebApplication.CreateBuilder(args);
 
 var app = builder.Build();
@@ -79,6 +81,12 @@ app.MapGet("/api/statistics/{a:int}/{b:int}", (int a, int b) =>
     });
 });
 
-app.Run();
+await app.RunAsync();
 
-public partial class Program { }
+public partial class Program
+{
+    [ExcludeFromCodeCoverage]
+    private Program()
+    {
+    }
+}
