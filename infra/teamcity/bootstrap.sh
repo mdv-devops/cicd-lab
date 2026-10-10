@@ -31,13 +31,11 @@ SONAR_SCANNER_VERSION="11.3.0"
 
 JAVA_HOME=""
 
-
 echo
 echo "============================================================"
 echo " TeamCity Server + PostgreSQL + Build Agent"
 echo "============================================================"
 echo
-
 
 # ============================================================
 # 1. Install system packages
@@ -130,6 +128,39 @@ echo "SonarScanner installed:"
 dotnet tool list --tool-path "${SONAR_SCANNER_HOME}"
 
 # ============================================================
+# Install ReportGenerator
+# ============================================================
+
+REPORTGENERATOR_HOME="/opt/reportgenerator"
+
+echo
+echo "Installing ReportGenerator..."
+
+mkdir -p "${REPORTGENERATOR_HOME}"
+
+INSTALLED_REPORTGENERATOR_VERSION="$(
+    dotnet tool list --tool-path "${REPORTGENERATOR_HOME}" \
+        | awk '$1 == "dotnet-reportgenerator-globaltool" {print $2}'
+)"
+
+if [ -z "${INSTALLED_REPORTGENERATOR_VERSION}" ]; then
+    dotnet tool install \
+        --tool-path "${REPORTGENERATOR_HOME}" \
+        dotnet-reportgenerator-globaltool
+else
+    echo "ReportGenerator ${INSTALLED_REPORTGENERATOR_VERSION} already installed."
+fi
+
+chmod -R a+rX "${REPORTGENERATOR_HOME}"
+
+ln -sfn \
+    "${REPORTGENERATOR_HOME}/reportgenerator" \
+    /usr/local/bin/reportgenerator
+
+echo "ReportGenerator installed:"
+dotnet tool list --tool-path "${REPORTGENERATOR_HOME}"
+
+# ============================================================
 # 2. Check Java and detect JAVA_HOME
 # ============================================================
 
@@ -154,7 +185,6 @@ fi
 echo
 echo "Java installation OK."
 
-
 # ============================================================
 # 3. Create TeamCity user
 # ============================================================
@@ -177,7 +207,6 @@ if ! id "${TEAMCITY_USER}" >/dev/null 2>&1; then
         "${TEAMCITY_USER}"
 
 fi
-
 
 # ============================================================
 # Verify SonarScanner as TeamCity user
@@ -215,7 +244,6 @@ mkdir -p /etc/teamcity
 chown root:root /etc/teamcity
 chmod 700 /etc/teamcity
 
-
 # ------------------------------------------------------------
 # Generate database password
 # ------------------------------------------------------------
@@ -233,7 +261,6 @@ fi
 
 DB_PASSWORD="$(cat "${DB_PASSWORD_FILE}")"
 
-
 # ------------------------------------------------------------
 # Create PostgreSQL user
 # ------------------------------------------------------------
@@ -250,7 +277,6 @@ if ! runuser -u postgres -- \
 
 fi
 
-
 # ------------------------------------------------------------
 # Configure PostgreSQL password
 # ------------------------------------------------------------
@@ -266,7 +292,6 @@ WITH LOGIN
 PASSWORD :'db_password';
 
 SQL
-
 
 # ------------------------------------------------------------
 # Create TeamCity database
@@ -286,7 +311,6 @@ if ! runuser -u postgres -- \
         "${DB_NAME}"
 
 fi
-
 
 # ------------------------------------------------------------
 # PostgreSQL listen address
@@ -311,7 +335,6 @@ sed -i \
 
 systemctl restart postgresql
 
-
 # ============================================================
 # 5. Test PostgreSQL
 # ============================================================
@@ -326,7 +349,6 @@ psql \
     -d "${DB_NAME}" \
     -v ON_ERROR_STOP=1 \
     -c "SELECT current_database(), current_user;"
-
 
 # ============================================================
 # 6. Download and install TeamCity Server
@@ -360,7 +382,6 @@ else
 
 fi
 
-
 # ============================================================
 # 7. Create TeamCity Data Directory
 # ============================================================
@@ -378,7 +399,6 @@ chown -R \
     "${TEAMCITY_USER}:${TEAMCITY_GROUP}" \
     "${TEAMCITY_HOME}" \
     "${TEAMCITY_DATA}"
-
 
 # ============================================================
 # 8. Install PostgreSQL JDBC driver
@@ -410,7 +430,6 @@ chown \
 
 chmod 644 "${JDBC_FILE}"
 
-
 # ============================================================
 # 9. Configure TeamCity database
 # ============================================================
@@ -440,7 +459,6 @@ chown \
     "${DB_CONFIG}"
 
 chmod 600 "${DB_CONFIG}"
-
 
 # ============================================================
 # 10. Create TeamCity Server systemd service
@@ -489,7 +507,6 @@ systemctl daemon-reload
 
 systemctl enable teamcity
 
-
 # ============================================================
 # 11. Start TeamCity Server
 # ============================================================
@@ -498,7 +515,6 @@ echo
 echo "[11/15] Starting TeamCity Server..."
 
 systemctl restart teamcity
-
 
 # ============================================================
 # 12. Wait for TeamCity Server
@@ -540,7 +556,6 @@ for i in $(seq 1 120); do
 
 done
 
-
 if [ "${TEAMCITY_READY}" != "true" ]; then
 
     echo
@@ -560,7 +575,6 @@ if [ "${TEAMCITY_READY}" != "true" ]; then
     exit 1
 
 fi
-
 
 # ============================================================
 # 13. Install TeamCity Build Agent
@@ -597,7 +611,6 @@ else
     echo "TeamCity Build Agent is already installed."
 
 fi
-
 
 # ============================================================
 # 14. Configure TeamCity Build Agent
@@ -637,7 +650,6 @@ fi
 chown -R \
     "${TEAMCITY_USER}:${TEAMCITY_GROUP}" \
     "${TEAMCITY_AGENT_HOME}"
-
 
 # ============================================================
 # Create Build Agent systemd service
@@ -679,7 +691,6 @@ LimitNOFILE=65535
 [Install]
 WantedBy=multi-user.target
 EOF
-
 
 # ============================================================
 # 15. Start Build Agent
