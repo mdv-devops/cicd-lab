@@ -230,6 +230,27 @@ fi
 echo "SonarScanner installation OK."
 
 # ============================================================
+# Verify SonarScanner as TeamCity user
+# ============================================================
+
+echo
+echo "Checking SonarScanner as ${TEAMCITY_USER}..."
+
+SCANNER_OUTPUT="$(
+    runuser -u "${TEAMCITY_USER}" -- \
+        /usr/local/bin/dotnet-sonarscanner --version 2>&1
+)" || true
+
+echo "${SCANNER_OUTPUT}"
+
+if ! grep -q "SonarScanner for .NET" <<< "${SCANNER_OUTPUT}"; then
+    echo "ERROR: SonarScanner verification failed."
+    exit 1
+fi
+
+echo "SonarScanner installation OK."
+
+# ============================================================
 # 4. Configure PostgreSQL
 # ============================================================
 
