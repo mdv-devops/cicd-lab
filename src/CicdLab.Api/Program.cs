@@ -81,6 +81,12 @@ app.MapGet("/api/statistics/{a:int}/{b:int}", (int a, int b) =>
     });
 });
 
+app.MapGet("/api/hello-sonar", () => Results.Ok(new
+{
+    message = "Hello from SonarQube!",
+    timestamp = DateTime.UtcNow
+}));
+
 await app.RunAsync();
 
 public partial class Program
