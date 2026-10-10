@@ -138,6 +138,23 @@ public class ApiTests : IClassFixture<WebApplicationFactory<Program>>
         );
     }
 
+    [Fact]
+    public async Task Subtract_ReturnsCorrectResult()
+    {
+        var response = await _client.GetAsync("/api/subtract/10/3");
+
+        response.EnsureSuccessStatusCode();
+
+        using var json = JsonDocument.Parse(
+            await response.Content.ReadAsStringAsync()
+        );
+
+        Assert.Equal(
+            7,
+            json.RootElement.GetProperty("result").GetInt32()
+        );
+    }
+
     private record DivideResponse(double Result);
     private record ErrorResponse(string Error);
     private record MultiplyResponse(int Result);
