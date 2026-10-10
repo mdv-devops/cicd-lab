@@ -41,6 +41,22 @@ app.MapGet("/api/multiply", (int a, int b) =>
     });
 });
 
+app.MapGet("/api/divide/{a:int}/{b:int}", (int a, int b) =>
+{
+    if (b == 0)
+    {
+        return Results.BadRequest(new
+        {
+            error = "Division by zero is not allowed"
+        });
+    }
+
+    return Results.Ok(new
+    {
+        result = (double)a / b
+    });
+});
+
 app.Run();
 
 public partial class Program { }

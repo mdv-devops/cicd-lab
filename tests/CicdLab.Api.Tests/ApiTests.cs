@@ -49,5 +49,38 @@ public class ApiTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.Equal(42, result.Result);
     }
 
+    [Fact]
+    public async Task Divide_ReturnsCorrectResult()
+    {
+        var response = await _client.GetAsync("/api/divide/7/2");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var result = await response.Content
+            .ReadFromJsonAsync<DivideResponse>();
+
+        Assert.NotNull(result);
+        Assert.Equal(3.5, result.Result);
+    }
+
+    [Fact]
+    public async Task Divide_ByZero_ReturnsBadRequest()
+    {
+        var response = await _client.GetAsync("/api/divide/10/0");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var result = await response.Content
+            .ReadFromJsonAsync<ErrorResponse>();
+
+        Assert.NotNull(result);
+        Assert.Equal(
+            "Division by zero is not allowed",
+            result.Error
+        );
+    }
+
+    private record DivideResponse(double Result);
+    private record ErrorResponse(string Error);
     private record MultiplyResponse(int Result);
 }
