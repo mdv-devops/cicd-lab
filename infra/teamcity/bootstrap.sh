@@ -40,7 +40,7 @@ echo " TeamCity Server + PostgreSQL
                 - .NET SDK 9
                 - SonarScanner for .NET
                 - ReportGenerator for .NET
-                - Trivysudo -u teamcity trivy --config "" --version"
+                - Trivy"
 echo "============================================================"
 echo
 
