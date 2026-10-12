@@ -107,8 +107,13 @@ app.MapGet("/api/subtract/{a:int}/{b:int}", (int a, int b) =>
 
 app.MapGet("/api/security-test", () =>
 {
-    const string password = "SuperSecretPassword123!";
-    return Results.Ok(new { configured = password.Length > 0 });
+    var connectionString =
+        "Server=localhost;Database=TestDb;User Id=admin;Password=SuperSecretPassword123!;";
+
+    return Results.Ok(new
+    {
+        configured = !string.IsNullOrEmpty(connectionString)
+    });
 });
 
 await app.RunAsync();
