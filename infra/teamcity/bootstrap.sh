@@ -34,7 +34,13 @@ JAVA_HOME=""
 
 echo
 echo "============================================================"
-echo " TeamCity Server + PostgreSQL + Build Agent"
+echo " TeamCity Server + PostgreSQL
+         L Build Agent
+             L Tools
+                - .NET SDK 9
+                - SonarScanner for .NET
+                - ReportGenerator for .NET
+                - Trivy"
 echo "============================================================"
 echo
 
@@ -130,7 +136,7 @@ echo "SonarScanner installed:"
 dotnet tool list --tool-path "${SONAR_SCANNER_HOME}"
 
 # ============================================================
-# Install ReportGenerator
+# Install ReportGenerator for .NET
 # ============================================================
 
 REPORTGENERATOR_HOME="/opt/reportgenerator"
@@ -161,6 +167,31 @@ ln -sfn \
 
 echo "ReportGenerator installed:"
 dotnet tool list --tool-path "${REPORTGENERATOR_HOME}"
+
+# --------------------------------------------------
+# Install Trivy
+# --------------------------------------------------
+
+echo "Installing Trivy..."
+
+apt-get install -y ca-certificates curl gnupg
+
+mkdir -p /etc/apt/keyrings
+
+curl -fsSL https://aquasecurity.github.io/trivy-repo/deb/public.key \
+  | gpg --batch --yes --dearmor \
+      -o /etc/apt/keyrings/trivy.gpg
+
+chmod 644 /etc/apt/keyrings/trivy.gpg
+
+echo "deb [signed-by=/etc/apt/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main" \
+  > /etc/apt/sources.list.d/trivy.list
+
+apt-get update
+apt-get install -y trivy
+
+echo "Trivy installed:"
+trivy --version
 
 # ============================================================
 # 2. Check Java and detect JAVA_HOME
