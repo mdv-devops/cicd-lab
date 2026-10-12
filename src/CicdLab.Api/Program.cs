@@ -105,17 +105,6 @@ app.MapGet("/api/subtract/{a:int}/{b:int}", (int a, int b) =>
     });
 });
 
-//app.MapGet("/api/security-test", () =>
-//{
-//    var connectionString =
-//        "Server=localhost;Database=TestDb;User Id=admin;Password=SuperSecretPassword123!;";
-//
-//    return Results.Ok(new
-//    {
-//        configured = !string.IsNullOrEmpty(connectionString)
-//    });
-//});
-
 await app.RunAsync();
 
 public partial class Program

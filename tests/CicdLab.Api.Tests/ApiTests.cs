@@ -155,22 +155,6 @@ public class ApiTests : IClassFixture<WebApplicationFactory<Program>>
         );
     }
 
-//    [Fact]
-//    public async Task SecurityTest_ReturnsOk()
-//    {
-//        var response = await _client.GetAsync("/api/security-test");
-//
-//        response.EnsureSuccessStatusCode();
-//
-//        using var json = JsonDocument.Parse(
-//            await response.Content.ReadAsStringAsync()
-//        );
-//
-//        Assert.True(
-//            json.RootElement.GetProperty("configured").GetBoolean()
-//        );
-//    }
-
     private record DivideResponse(double Result);
     private record ErrorResponse(string Error);
     private record MultiplyResponse(int Result);
