@@ -105,6 +105,12 @@ app.MapGet("/api/subtract/{a:int}/{b:int}", (int a, int b) =>
     });
 });
 
+app.MapGet("/api/security-test", () =>
+{
+    const string password = "SuperSecretPassword123!";
+    return Results.Ok(new { configured = password.Length > 0 });
+});
+
 await app.RunAsync();
 
 public partial class Program
