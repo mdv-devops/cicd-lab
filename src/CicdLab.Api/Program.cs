@@ -105,14 +105,6 @@ app.MapGet("/api/subtract/{a:int}/{b:int}", (int a, int b) =>
     });
 });
 
-// app.MapGet("/api/coverage-check/{value:int}", (int value) =>
-// {
-//     if (value > 100)
-//         return Results.Ok(new { result = "high" });
-
-//     return Results.Ok(new { result = "low" });
-// });
-
 await app.RunAsync();
 
 public partial class Program
