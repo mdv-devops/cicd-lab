@@ -113,7 +113,7 @@ app.MapGet("/api/subtract/{a:int}/{b:int}", (int a, int b) =>
 //     return Results.Ok(new { result = "low" });
 // });
 
-// await app.RunAsync();
+await app.RunAsync();
 
 public partial class Program
 {
