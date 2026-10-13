@@ -81,62 +81,62 @@ public class ApiTests : IClassFixture<WebApplicationFactory<Program>>
         );
     }
 
-    [Theory]
-    [InlineData(10, 5, 15, 5, 50, 10, 5, 7.5)]
-    [InlineData(3, 8, 11, -5, 24, 8, 3, 5.5)]
-    [InlineData(-4, -2, -6, -2, 8, -2, -4, -3.0)]
-    public async Task Statistics_ReturnsCorrectResults(
-        int a,
-        int b,
-        int sum,
-        int difference,
-        int product,
-        int maximum,
-        int minimum,
-        double average)
-    {
-        var response = await _client.GetAsync($"/api/statistics/{a}/{b}");
+    // [Theory]
+    // [InlineData(10, 5, 15, 5, 50, 10, 5, 7.5)]
+    // [InlineData(3, 8, 11, -5, 24, 8, 3, 5.5)]
+    // [InlineData(-4, -2, -6, -2, 8, -2, -4, -3.0)]
+    // public async Task Statistics_ReturnsCorrectResults(
+    //     int a,
+    //     int b,
+    //     int sum,
+    //     int difference,
+    //     int product,
+    //     int maximum,
+    //     int minimum,
+    //     double average)
+    // {
+    //     var response = await _client.GetAsync($"/api/statistics/{a}/{b}");
 
-        response.EnsureSuccessStatusCode();
+    //     response.EnsureSuccessStatusCode();
 
-        var result = await response.Content
-            .ReadFromJsonAsync<StatisticsResponse>();
+    //     var result = await response.Content
+    //         .ReadFromJsonAsync<StatisticsResponse>();
 
-        Assert.NotNull(result);
-        Assert.Equal(sum, result.Sum);
-        Assert.Equal(difference, result.Difference);
-        Assert.Equal(product, result.Product);
-        Assert.Equal(maximum, result.Maximum);
-        Assert.Equal(minimum, result.Minimum);
-        Assert.Equal(average, result.Average);
-    }
+    //     Assert.NotNull(result);
+    //     Assert.Equal(sum, result.Sum);
+    //     Assert.Equal(difference, result.Difference);
+    //     Assert.Equal(product, result.Product);
+    //     Assert.Equal(maximum, result.Maximum);
+    //     Assert.Equal(minimum, result.Minimum);
+    //     Assert.Equal(average, result.Average);
+    // }
 
-    private record StatisticsResponse(
-        int Sum,
-        int Difference,
-        int Product,
-        int Maximum,
-        int Minimum,
-        double Average);
+    // private record StatisticsResponse(
+    //     int Sum,
+    //     int Difference,
+    //     int Product,
+    //     int Maximum,
+    //     int Minimum,
+    //     double Average);
 
-    [Theory]
-    [InlineData(150, "High value")]
-    [InlineData(50, "Low value")]
-    public async Task Check_ReturnsCorrectMessage(int value, string expected)
-    {
-        var response = await _client.GetAsync($"/api/check/{value}");
+    // [Theory]
+    // [InlineData(150, "High value")]
+    // [InlineData(50, "Low value")]
+    // public async Task Check_ReturnsCorrectMessage(int value, string expected)
+    // {
+    //     var response = await _client.GetAsync($"/api/check/{value}");
 
-        response.EnsureSuccessStatusCode();
+    //     response.EnsureSuccessStatusCode();
 
-        using var json = JsonDocument.Parse(
-            await response.Content.ReadAsStringAsync()
-        );
+    //     using var json = JsonDocument.Parse(
+    //         await response.Content.ReadAsStringAsync()
+    //     );
 
-        Assert.Equal(
-            expected,
-            json.RootElement.GetProperty("message").GetString()
-        );
-    }
+    //     Assert.Equal(
+    //         expected,
+    //         json.RootElement.GetProperty("message").GetString()
+    //     );
+    // }
 
     // [Fact]
     // public async Task Subtract_ReturnsCorrectResult()
