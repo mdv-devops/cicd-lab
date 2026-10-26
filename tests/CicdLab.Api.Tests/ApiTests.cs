@@ -155,6 +155,29 @@ public class ApiTests : IClassFixture<WebApplicationFactory<Program>>
         );
     }
 
+    [Theory]
+    [InlineData(150, "high")]
+    [InlineData(50, "low")]
+    public async Task CoverageCheck_ReturnsExpectedResult(
+    int value,
+    string expected)
+    {
+        var response = await _client.GetAsync(
+            $"/api/coverage-check/{value}"
+        );
+
+        response.EnsureSuccessStatusCode();
+
+        using var json = JsonDocument.Parse(
+            await response.Content.ReadAsStringAsync()
+        );
+
+        Assert.Equal(
+            expected,
+            json.RootElement.GetProperty("result").GetString()
+        );
+    }
+
     private record DivideResponse(double Result);
     private record ErrorResponse(string Error);
     private record MultiplyResponse(int Result);
