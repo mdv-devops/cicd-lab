@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.5" />
+    <PackageReference Include="RbTeam.OpenTelemetryLib.WithConfig" Version="1.0.4" />
     <!-- <PackageReference Include="Newtonsoft.Json" Version="12.0.1" /> -->
     <!-- <PackageReference Include="Newtonsoft.Json" Version="13.0.3" /> -->
     <!-- <PackageReference Include="NuGet.Packaging" Version="6.8.0" /> -->
