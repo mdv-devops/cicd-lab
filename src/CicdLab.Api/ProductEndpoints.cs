@@ -9,6 +9,7 @@ public record ProductPriceRequest(decimal Price);
 
 public static class ProductEndpoints
 {
+    private const string ProductByIdRoute = "/{id:int}";
     private static readonly ConcurrentDictionary<int, Product> Products = new();
     private static int _nextId;
 
@@ -19,7 +20,7 @@ public static class ProductEndpoints
         group.MapGet("/", () =>
             Results.Ok(Products.Values.OrderBy(p => p.Id)));
 
-        group.MapGet("/{id:int}", (int id) =>
+        group.MapGet(ProductByIdRoute, (int id) =>
             Products.TryGetValue(id, out var product)
                 ? Results.Ok(product)
                 : Results.NotFound());
@@ -39,7 +40,7 @@ public static class ProductEndpoints
             return Results.Created($"/api/products/{id}", product);
         });
 
-        group.MapPut("/{id:int}", (int id, ProductRequest request) =>
+        group.MapPut(ProductByIdRoute, (int id, ProductRequest request) =>
         {
             if (string.IsNullOrWhiteSpace(request.Name) ||
                 request.Price < 0)
@@ -56,7 +57,7 @@ public static class ProductEndpoints
             return Results.NotFound();
         });
 
-        group.MapPatch("/{id:int}", (int id, ProductPriceRequest request) =>
+        group.MapPatch(ProductByIdRoute, (int id, ProductPriceRequest request) =>
         {
             if (request.Price < 0)
                 return Results.BadRequest();
@@ -72,7 +73,7 @@ public static class ProductEndpoints
             return Results.NotFound();
         });
 
-        group.MapDelete("/{id:int}", (int id) =>
+        group.MapDelete(ProductByIdRoute, (int id) =>
             Products.TryRemove(id, out _)
                 ? Results.NoContent()
                 : Results.NotFound());
