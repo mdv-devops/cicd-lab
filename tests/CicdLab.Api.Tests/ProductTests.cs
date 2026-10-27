@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Xunit;
+namespace CicdLab.Api;
 
 public class ProductTests : IClassFixture<WebApplicationFactory<Program>>
 {

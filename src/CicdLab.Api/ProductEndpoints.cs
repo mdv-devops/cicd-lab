@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+namespace CicdLab.Api;
 
 public record Product(int Id, string Name, decimal Price);
 

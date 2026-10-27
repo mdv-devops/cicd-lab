@@ -1,5 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
-
+using CicdLab.Api;
 var builder = WebApplication.CreateBuilder(args);
 
 var app = builder.Build();
