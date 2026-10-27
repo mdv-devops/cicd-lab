@@ -1,9 +1,10 @@
 using System.Diagnostics.CodeAnalysis;
-
+using CicdLab.Api;
 var builder = WebApplication.CreateBuilder(args);
 
 var app = builder.Build();
 
+app.MapProductEndpoints();
 app.MapGet("/", () => Results.Ok(new
 {
     service = "cicd-lab-api",
@@ -103,6 +104,14 @@ app.MapGet("/api/subtract/{a:int}/{b:int}", (int a, int b) =>
     {
         result = a - b
     });
+});
+
+app.MapGet("/api/coverage-check/{value:int}", (int value) =>
+{
+    if (value > 100)
+        return Results.Ok(new { result = "high" });
+
+    return Results.Ok(new { result = "low" });
 });
 
 await app.RunAsync();
