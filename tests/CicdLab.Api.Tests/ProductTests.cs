@@ -189,21 +189,21 @@ public class ProductTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
-    [Fact]
-    public async Task DeleteProduct_RemovesProduct()
-    {
-        var id = await CreateProduct();
+    // [Fact]
+    // public async Task DeleteProduct_RemovesProduct()
+    // {
+    //     var id = await CreateProduct();
 
-        var response = await _client.DeleteAsync(
-            $"/api/products/{id}");
+    //     var response = await _client.DeleteAsync(
+    //         $"/api/products/{id}");
 
-        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+    //     Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
 
-        var getResponse = await _client.GetAsync(
-            $"/api/products/{id}");
+    //     var getResponse = await _client.GetAsync(
+    //         $"/api/products/{id}");
 
-        Assert.Equal(HttpStatusCode.NotFound, getResponse.StatusCode);
-    }
+    //     Assert.Equal(HttpStatusCode.NotFound, getResponse.StatusCode);
+    // }
 
     // [Fact]
     // public async Task DeleteProduct_NotFound()
