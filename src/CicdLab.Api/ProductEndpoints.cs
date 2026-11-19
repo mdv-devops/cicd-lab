@@ -16,6 +16,10 @@ public static class ProductEndpoints
     private static readonly ConcurrentDictionary<int, Product> Products = new();
     private static int _nextId;
 
+    public static bool ProductExists(int id)
+    {
+        return Products.ContainsKey(id);
+    }
     public static void MapProductEndpoints(this WebApplication app)
     {
         var group = app.MapGroup("/api/products");
