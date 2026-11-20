@@ -193,6 +193,49 @@ apt-get install -y trivy
 echo "Trivy installed:"
 trivy --version
 
+
+# ============================================================
+# Install Docker Engine
+# ============================================================
+
+echo
+echo "Installing Docker Engine..."
+
+apt-get install -y ca-certificates curl
+
+install -m 0755 -d /etc/apt/keyrings
+
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
+    -o /etc/apt/keyrings/docker.asc
+
+chmod a+r /etc/apt/keyrings/docker.asc
+
+. /etc/os-release
+
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu ${UBUNTU_CODENAME:-$VERSION_CODENAME} stable" \
+    > /etc/apt/sources.list.d/docker.list
+
+apt-get update
+
+apt-get install -y \
+    docker-ce \
+    docker-ce-cli \
+    containerd.io \
+    docker-buildx-plugin \
+    docker-compose-plugin
+
+systemctl enable --now docker
+
+echo "Docker installed:"
+docker --version
+
+echo "Docker Buildx:"
+docker buildx version
+
+echo "Docker Compose:"
+docker compose version
+
+
 # ============================================================
 # 2. Check Java and detect JAVA_HOME
 # ============================================================
@@ -241,6 +284,19 @@ if ! id "${TEAMCITY_USER}" >/dev/null 2>&1; then
         "${TEAMCITY_USER}"
 
 fi
+
+
+# ============================================================
+# Configure Docker access for TeamCity Agent
+# ============================================================
+
+echo
+echo "Configuring Docker access for ${TEAMCITY_USER}..."
+
+usermod -aG docker "${TEAMCITY_USER}"
+
+echo "TeamCity user groups:"
+id "${TEAMCITY_USER}"
 
 
 # ============================================================
@@ -757,6 +813,21 @@ systemctl daemon-reload
 systemctl enable teamcity-agent
 
 systemctl restart teamcity-agent
+
+
+# ============================================================
+# Verify Docker access
+# ============================================================
+
+echo
+echo "Verifying Docker access for TeamCity Agent..."
+
+runuser -u "${TEAMCITY_USER}" -- docker info >/dev/null
+
+runuser -u "${TEAMCITY_USER}" -- docker version
+
+echo "Docker access verification PASSED."
+
 
 # ============================================================
 # Final information
