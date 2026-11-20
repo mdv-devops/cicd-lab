@@ -126,6 +126,40 @@ app.MapGet("/api/square/{number:int}", (int number) =>
     });
 });
 
+app.MapGet("/api/discount", (decimal price, decimal percent) =>
+{
+    if (price < 0)
+    {
+        return Results.BadRequest(new
+        {
+            Error = "Price cannot be negative"
+        });
+    }
+
+    if (percent < 0 || percent > 100)
+    {
+        return Results.BadRequest(new
+        {
+            Error = "Discount must be between 0 and 100"
+        });
+    }
+
+    decimal discountAmount = Math.Round(
+        price * percent / 100,
+        2,
+        MidpointRounding.AwayFromZero);
+
+    decimal finalPrice = price - discountAmount;
+
+    return Results.Ok(new
+    {
+        OriginalPrice = price,
+        DiscountPercent = percent,
+        DiscountAmount = discountAmount,
+        FinalPrice = finalPrice
+    });
+});
+
 await app.RunAsync();
 
 public partial class Program
