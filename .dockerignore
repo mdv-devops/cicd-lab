@@ -1,0 +1,11 @@
+**/bin
+**/obj
+**/TestResults
+**/coverage
+.git
+.github
+.vs
+.vscode
+.idea
+*.user
+*.suodocker run --rm -d --name cicd-lab -p 8080:8080 cicd-lab:test
