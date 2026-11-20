@@ -115,6 +115,17 @@ app.MapGet("/api/coverage-check/{value:int}", (int value) =>
     return Results.Ok(new { result = "low" });
 });
 
+app.MapGet("/api/square/{number:int}", (int number) =>
+{
+    long result = (long)number * number;
+
+    return Results.Ok(new
+    {
+        Number = number,
+        Result = result
+    });
+});
+
 await app.RunAsync();
 
 public partial class Program

@@ -213,4 +213,47 @@ public class ProductTests : IClassFixture<WebApplicationFactory<Program>>
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
+    [Theory]
+    [InlineData(5)]
+    [InlineData(0)]
+    [InlineData(-4)]
+    [InlineData(100)]
+    [InlineData(int.MaxValue)]
+    [InlineData(int.MinValue)]
+    public async Task Square_ReturnsCorrectResult(int number)
+    {
+        var response = await _client.GetAsync(
+            $"/api/square/{number}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        using var json = JsonDocument.Parse(
+            await response.Content.ReadAsStringAsync());
+
+        Assert.Equal(
+            number,
+            json.RootElement.GetProperty("number").GetInt32());
+
+        Assert.Equal(
+            (long)number * number,
+            json.RootElement.GetProperty("result").GetInt64());
+    }
+
+    [Fact]
+    public async Task Square_InvalidNumber_ReturnsNotFound()
+    {
+        var response = await _client.GetAsync(
+            "/api/square/abc");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Square_NumberOutOfRange_ReturnsNotFound()
+    {
+        var response = await _client.GetAsync(
+            "/api/square/2147483648");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
 }
