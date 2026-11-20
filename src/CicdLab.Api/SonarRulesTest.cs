@@ -99,12 +99,12 @@ public static class SonarRulesTest
 
     public static bool HasProductsStartingWithA(IEnumerable<Product> products)
     {
-        return products.Any(p => p.Name.StartsWith("A"));
+        return products.Any(p => p.Name.StartsWith('A'));
     }
 
     public static bool HasProductsEndingWithX(IEnumerable<Product> products)
     {
-        return products.Any(p => p.Name.EndsWith("X"));
+        return products.Any(p => p.Name.EndsWith('X'));
     }
 
     public static bool HasProductsWithEvenIds(IEnumerable<Product> products)
