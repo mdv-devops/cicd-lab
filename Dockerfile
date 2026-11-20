@@ -14,7 +14,7 @@ RUN dotnet publish src/CicdLab.Api/CicdLab.Api.csproj \
     --no-restore \
     /p:UseAppHost=false
 
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:9.0-noble-chiseled AS final
 
 WORKDIR /app
 
