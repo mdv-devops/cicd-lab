@@ -1,3 +1,4 @@
+
 using Xunit;
 
 namespace CicdLab.Api.Tests;
@@ -27,19 +28,20 @@ public class SonarRulesTests
 
         Assert.True(result);
     }
-    public static IEnumerable<object[]> LowSeverityCases()
+
+    public static TheoryData<string, bool> LowSeverityCases => new()
     {
-        yield return new object[] { "Expensive", true };
-        yield return new object[] { "Cheap", true };
-        yield return new object[] { "Free", true };
-        yield return new object[] { "Named", true };
-        yield return new object[] { "LongNames", true };
-        yield return new object[] { "ShortNames", true };
-        yield return new object[] { "StartsWithA", true };
-        yield return new object[] { "EndsWithX", true };
-        yield return new object[] { "EvenIds", true };
-        yield return new object[] { "OddIds", true };
-    }
+        { "Expensive", true },
+        { "Cheap", true },
+        { "Free", true },
+        { "Named", true },
+        { "LongNames", true },
+        { "ShortNames", true },
+        { "StartsWithA", true },
+        { "EndsWithX", true },
+        { "EvenIds", true },
+        { "OddIds", true }
+    };
 
     [Theory]
     [MemberData(nameof(LowSeverityCases))]
@@ -49,10 +51,10 @@ public class SonarRulesTests
     {
         var products = new[]
         {
-        new Product(1, "AppleLaptopX", 1500),
-        new Product(2, "Mouse", 50),
-        new Product(3, "Free", 0)
-    };
+            new Product(1, "AppleLaptopX", 1500),
+            new Product(2, "Mouse", 50),
+            new Product(3, "Free", 0)
+        };
 
         var result = scenario switch
         {
