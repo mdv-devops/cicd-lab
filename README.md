@@ -239,10 +239,10 @@ feature/fix-bug ─────── PR + Approve ──┤
 |---|---|
 | Require branches to be up to date before merging | Выключено |
 | Do not require status checks on creation | Выключено |
-| Required status checks | `cicd-lab (global)` |
+| Required status checks | `1: PR code reviewer (global)` |
 | Source | `Any source` |
 
-Проверка `cicd-lab (global)` используется GitHub для контроля результата CI-сборки.
+Проверка `1: PR code reviewer (global)` используется GitHub для контроля результата CI-сборки.
 
 Если проверка не прошла или не завершилась, GitHub блокирует объединение Pull Request.
 
