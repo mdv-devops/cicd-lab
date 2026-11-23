@@ -237,6 +237,34 @@ docker compose version
 
 
 # ============================================================
+# Install Cosign
+# ============================================================
+
+COSIGN_VERSION="v3.0.2"
+
+echo "Installing Cosign ${COSIGN_VERSION}..."
+
+ARCH="$(dpkg --print-architecture)"
+
+case "${ARCH}" in
+    amd64|arm64) ;;
+    *)
+        echo "Unsupported architecture: ${ARCH}"
+        exit 1
+        ;;
+esac
+
+curl -fsSL --retry 5 -o /tmp/cosign \
+    "https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/cosign-linux-${ARCH}"
+
+install -m 0755 /tmp/cosign /usr/local/bin/cosign
+rm -f /tmp/cosign
+
+echo "Cosign installed:"
+cosign version
+
+
+# ============================================================
 # 2. Check Java and detect JAVA_HOME
 # ============================================================
 
