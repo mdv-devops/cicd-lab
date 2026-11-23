@@ -213,4 +213,124 @@ public class ProductTests : IClassFixture<WebApplicationFactory<Program>>
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
+    [Theory]
+    [InlineData(5)]
+    [InlineData(0)]
+    [InlineData(-4)]
+    [InlineData(100)]
+    [InlineData(int.MaxValue)]
+    [InlineData(int.MinValue)]
+    public async Task Square_ReturnsCorrectResult(int number)
+    {
+        var response = await _client.GetAsync(
+            $"/api/square/{number}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        using var json = JsonDocument.Parse(
+            await response.Content.ReadAsStringAsync());
+
+        Assert.Equal(
+            number,
+            json.RootElement.GetProperty("number").GetInt32());
+
+        Assert.Equal(
+            (long)number * number,
+            json.RootElement.GetProperty("result").GetInt64());
+    }
+
+    [Fact]
+    public async Task Square_InvalidNumber_ReturnsNotFound()
+    {
+        var response = await _client.GetAsync(
+            "/api/square/abc");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Square_NumberOutOfRange_ReturnsNotFound()
+    {
+        var response = await _client.GetAsync(
+            "/api/square/2147483648");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData(1000, 20, 200, 800)]
+    [InlineData(500, 0, 0, 500)]
+    [InlineData(200, 100, 200, 0)]
+    [InlineData(99, 10, 9.90, 89.10)]
+    [InlineData(0, 50, 0, 0)]
+    public async Task Discount_ValidData_ReturnsCorrectResult(
+        decimal price,
+        decimal percent,
+        decimal expectedDiscount,
+        decimal expectedFinalPrice)
+    {
+        var response = await _client.GetAsync(
+            $"/api/discount?price={price}&percent={percent}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        using var json = JsonDocument.Parse(
+            await response.Content.ReadAsStringAsync());
+
+        var result = json.RootElement;
+
+        Assert.Equal(
+            price,
+            result.GetProperty("originalPrice").GetDecimal());
+
+        Assert.Equal(
+            percent,
+            result.GetProperty("discountPercent").GetDecimal());
+
+        Assert.Equal(
+            expectedDiscount,
+            result.GetProperty("discountAmount").GetDecimal());
+
+        Assert.Equal(
+            expectedFinalPrice,
+            result.GetProperty("finalPrice").GetDecimal());
+    }
+
+    [Theory]
+    [InlineData(-100, 10)]
+    [InlineData(100, -5)]
+    [InlineData(100, 101)]
+    public async Task Discount_InvalidData_ReturnsBadRequest(
+        decimal price,
+        decimal percent)
+    {
+        var response = await _client.GetAsync(
+            $"/api/discount?price={price}&percent={percent}");
+
+        Assert.Equal(
+            HttpStatusCode.BadRequest,
+            response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Discount_MissingPrice_ReturnsBadRequest()
+    {
+        var response = await _client.GetAsync(
+            "/api/discount?percent=10");
+
+        Assert.Equal(
+            HttpStatusCode.BadRequest,
+            response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Discount_InvalidPriceFormat_ReturnsBadRequest()
+    {
+        var response = await _client.GetAsync(
+            "/api/discount?price=abc&percent=10");
+
+        Assert.Equal(
+            HttpStatusCode.BadRequest,
+            response.StatusCode);
+    }
 }
