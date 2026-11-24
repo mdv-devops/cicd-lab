@@ -2,7 +2,9 @@
 
 ## О проекте
 
-![DevSecOps Pipeline](docs/images/devsecops-pipeline.png)
+<p align="center">
+  <img src="docs/images/devsecops-pipeline.png" alt="DevSecOps Pipeline" width="100%">
+</p>
 
 Этот проект представляет собой практический пример построения автоматизированного CI/CD-процесса для .NET-приложения с использованием инструментов контроля качества кода, анализа безопасности и цифровой подписи Docker-образов.
 
