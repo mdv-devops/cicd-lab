@@ -160,6 +160,39 @@ app.MapGet("/api/discount", (decimal price, decimal percent) =>
     });
 });
 
+app.MapGet("/api/shipping", (decimal orderAmount) =>
+{
+    if (orderAmount <= 0)
+    {
+        return Results.BadRequest(new
+        {
+            Error = "Order amount must be positive"
+        });
+    }
+
+    decimal shippingCost;
+
+    if (orderAmount >= 100)
+    {
+        shippingCost = 0;
+    }
+    else if (orderAmount >= 50)
+    {
+        shippingCost = 5;
+    }
+    else
+    {
+        shippingCost = 10;
+    }
+
+    return Results.Ok(new
+    {
+        OrderAmount = orderAmount,
+        ShippingCost = shippingCost,
+        TotalAmount = orderAmount + shippingCost
+    });
+});
+
 await app.RunAsync();
 
 public partial class Program
