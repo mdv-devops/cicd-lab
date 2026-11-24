@@ -367,7 +367,7 @@ VCS Root создаётся на уровне проекта и может ис�
 
 
 
-##### === 1: PR code reviewer ===
+# === 1: PR code reviewer ===
 
 ### 3.3. Создание Build Configuration `PR code reviewer`
 
@@ -1146,7 +1146,7 @@ TeamCity позволяет отображать HTML-отчёты непоср�
 
 
 
-##### === 2: Building & Deployment ===
+# === 2: Building & Deployment ===
 
 ## 4. Настройка Building & Deployment
 
