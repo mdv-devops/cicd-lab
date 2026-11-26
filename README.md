@@ -686,11 +686,40 @@ SonarScanner инициализирован. После выполнения ш�
 
 Результаты покрытия будут использоваться SonarQube для анализа качества кода и проверки Quality Gate.
 
-**Шаг 1. Добавление Build Step**
+**Шаг 1. Настройка Coverlet**
+
+В корне репозитория создайте файл `coverlet.runsettings` со следующим содержимым:
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+    <DataCollectionRunSettings>
+        <DataCollectors>
+            <DataCollector friendlyName="XPlat Code Coverage">
+                <Configuration>
+                    <Format>opencover</Format>
+                    <Exclude>[CicdLab.Api]Microsoft.AspNetCore.OpenApi.Generated*,[CicdLab.Api]System.Runtime.CompilerServices.*</Exclude>
+                </Configuration>
+            </DataCollector>
+        </DataCollectors>
+    </DataCollectionRunSettings>
+</RunSettings>
+```
+
+Данный файл определяет параметры сбора данных о покрытии кода и формат выходного отчёта.
+
+Хранение конфигурации в отдельном файле позволяет:
+
+- Использовать одинаковые настройки при локальном запуске тестов и в CI/CD.
+- Хранить конфигурацию тестового покрытия в системе контроля версий.
+- Избежать проблем с экранированием аргументов командной строки.
+- Обеспечить совместимость с .NET 9 и .NET 10 при использовании VSTest.
+
+**Шаг 2. Добавление Build Step**
 
 Нажмите `Add build step` и выберите `.NET`.
 
-**Шаг 2. Настройка параметров**
+**Шаг 3. Настройка параметров**
 
 | Параметр | Значение |
 |---|---|
@@ -698,7 +727,7 @@ SonarScanner инициализирован. После выполнения ш�
 | Command | `test` |
 | Projects | `CicdLab.sln` |
 | Configuration | `Release` |
-| Additional arguments | `--no-build --collect:"XPlat Code Coverage;Format=opencover" --results-directory coverage` |
+| Additional arguments | `--no-build --settings coverlet.runsettings --results-directory coverage` |
 
 Остальные параметры оставьте по умолчанию.
 
@@ -710,17 +739,19 @@ SonarScanner инициализирован. После выполнения ш�
 
 Здесь он используется для формирования отчёта в формате **OpenCover**, который поддерживается SonarQube и ReportGenerator.
 
+Параметры сборщика и формат отчёта определяются в файле `coverlet.runsettings`, поэтому передавать их через аргумент `--collect` больше не требуется.
+
 **Дополнительные аргументы:**
 
 - `--no-build` — отключает повторную компиляцию приложения, поскольку сборка уже выполнена на предыдущем шаге.
-- `--collect:"XPlat Code Coverage;Format=opencover"` — запускает сбор данных о покрытии кода в формате OpenCover.
+- `--settings coverlet.runsettings` — указывает файл конфигурации тестирования и сбора данных о покрытии кода.
 - `--results-directory coverage` — указывает каталог для сохранения результатов тестирования и файлов покрытия.
 
-**Шаг 3. Сохранение**
+**Шаг 4. Сохранение**
 
 Нажмите `Save`.
 
-После выполнения шага TeamCity получит результаты автоматизированных тестов, а файлы покрытия будут сохранены в каталоге `coverage`.
+После выполнения шага TeamCity получит результаты автоматизированных тестов, а файлы `coverage.opencover.xml` будут сохранены в подкаталогах каталога `coverage`.
 
 В дальнейшем эти данные будут переданы в SonarQube для анализа покрытия кода и использованы при формировании HTML-отчёта.
 
