@@ -1,19 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.5" />
-    <!-- <PackageReference Include="RbTeam.OpenTelemetryLib.WithConfig" Version="1.0.4" /> -->
-    <!-- <PackageReference Include="Newtonsoft.Json" Version="12.0.1" /> -->
-    <!-- <PackageReference Include="Newtonsoft.Json" Version="13.0.3" /> -->
-    <!-- <PackageReference Include="NuGet.Packaging" Version="6.8.0" /> -->
-    <!-- <PackageReference Include="NuGet.Packaging" Version="6.8.2" />  -->
-    <!-- <PackageReference Include="System.Text.Json" Version="8.0.0" /> -->
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.15" />
   </ItemGroup>
 
 </Project>
