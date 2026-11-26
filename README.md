@@ -698,6 +698,7 @@ SonarScanner инициализирован. После выполнения ш�
             <DataCollector friendlyName="XPlat Code Coverage">
                 <Configuration>
                     <Format>opencover</Format>
+                    <Exclude>[CicdLab.Api]Microsoft.AspNetCore.OpenApi.Generated*,[CicdLab.Api]System.Runtime.CompilerServices.*</Exclude>
                 </Configuration>
             </DataCollector>
         </DataCollectors>
