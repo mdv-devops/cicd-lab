@@ -529,66 +529,90 @@ SBOM сохраняется в артефактах соответствующе
 
 ### 6.4. Upload SBOM to Dependency-Track
 
-Данный Build Step предназначен для автоматической передачи сформированного SBOM в Dependency-Track.
+Данный Build Step предназначен для автоматической загрузки сформированного SBOM в Dependency-Track для последующего анализа программных компонентов и непрерывного мониторинга уязвимостей.
 
-Dependency-Track используется для централизованного анализа программных компонентов и непрерывного мониторинга уязвимостей после завершения CI/CD Pipeline.
+Загрузка SBOM выполняется после успешного завершения следующих Build Steps:
 
-Загрузка SBOM выполняется после шага `Generate SBOM` и перед публикацией контейнерного образа в Docker Hub.
+- Docker Build.
+- Trivy Image Scan.
+- Generate SBOM.
 
-#### 6.4.1. Настройка параметров TeamCity
+Каждая новая ревизия приложения регистрируется как отдельный дочерний проект внутри родительского Collection Project.
+
+В качестве версии проекта используется Git commit SHA текущей сборки.
+
+#### 6.4.1. Предварительные требования
+
+Перед настройкой Build Step необходимо выполнить следующие действия в Dependency-Track:
+
+- Создать команду для интеграции с TeamCity.
+- Создать сервисную учётную запись.
+- Назначить необходимые разрешения.
+- Создать API Key с ограниченным сроком действия.
+- Создать родительский Collection Project.
+- Получить UUID родительского проекта.
+
+Подробная настройка описана в технической документации:
+
+- [Настройка доступа для TeamCity](dependency-track.md#teamcity-access)
+- [Настройка иерархии проектов](dependency-track.md#project-collection)
+- [Интеграция с TeamCity](dependency-track.md#teamcity-integration)
+
+#### 6.4.2. Настройка параметров TeamCity
 
 Перейдите в раздел:
 
-`Administration → Projects → global → 2: Building & Deployment → Parameters`
+`2: Building & Deployment → Parameters`
 
-Добавьте следующие параметры:
+Создайте следующие параметры:
 
 | Name | Kind | Type | Value |
 |---|---|---|---|
 | `env.DTRACK_URL` | Environment variable | Text | `http://<dependency-track-host>:8081` |
 | `env.DTRACK_PROJECT_NAME` | Environment variable | Text | `cicd-lab` |
-| `env.DTRACK_API_KEY` | Environment variable | Password | API Key |
+| `env.DTRACK_PARENT_UUID` | Environment variable | Text | `<collection-project-uuid>` |
+| `env.DTRACK_API_KEY` | Environment variable | Password | `<api-key>` |
 
 **DTRACK_URL**
 
-Адрес API-сервера Dependency-Track.
+Адрес API Server Dependency-Track.
 
-Необходимо использовать адрес Backend API, а не Frontend.
+Для взаимодействия через REST API используется адрес API Server, а не Frontend.
 
 **DTRACK_PROJECT_NAME**
 
-Название проекта, под которым программные компоненты будут зарегистрированы в Dependency-Track.
+Название дочернего проекта, создаваемого при загрузке SBOM.
+
+**DTRACK_PARENT_UUID**
+
+Уникальный идентификатор родительского Collection Project.
+
+Используется для автоматической регистрации новых версий приложения внутри родительского проекта.
+
+UUID не является секретом.
 
 **DTRACK_API_KEY**
 
-API Key сервисной учётной записи TeamCity в Dependency-Track.
+API Key сервисной учётной записи Dependency-Track.
 
-Для загрузки SBOM и автоматического создания проектов необходимы следующие разрешения:
+Хранится в защищённом параметре типа `Password` и не должен отображаться в Build Log или храниться в Git-репозитории.
 
-- `BOM_UPLOAD`
-- `PROJECT_CREATION_UPLOAD`
-
-API Key необходимо хранить в TeamCity как параметр типа `Password`.
-
-#### 6.4.2. Создание Build Step
+#### 6.4.3. Настройка Build Step
 
 Перейдите в раздел:
 
-`Administration → Projects → global → 2: Building & Deployment → Build Steps`
-
-Нажмите `Add build step`.
+`2: Building & Deployment → Build Steps → Add build step`
 
 Укажите следующие параметры:
 
 | Параметр | Значение |
 |---|---|
 | Runner type | Command Line |
-| Step name | `Upload SBOM to Dependency-Track` |
-| Execute step | Only if all previous steps were successful |
-| Working directory | `%teamcity.build.checkoutDir%` |
+| Step name | Upload SBOM to Dependency-Track |
+| Execute step | If all previous steps finished successfully |
 | Run | Custom script |
 
-#### 6.4.3. Скрипт загрузки SBOM
+#### 6.4.4. Custom script
 
 ```bash
 #!/usr/bin/env bash
@@ -601,6 +625,7 @@ PROJECT_VERSION="%build.vcs.number%"
 : "${DTRACK_URL:?DTRACK_URL is required}"
 : "${DTRACK_PROJECT_NAME:?DTRACK_PROJECT_NAME is required}"
 : "${DTRACK_API_KEY:?DTRACK_API_KEY is required}"
+: "${DTRACK_PARENT_UUID:?DTRACK_PARENT_UUID is required}"
 
 echo "=== Uploading SBOM to Dependency-Track ==="
 
@@ -611,10 +636,11 @@ fi
 
 echo "Project: $DTRACK_PROJECT_NAME"
 echo "Version: $PROJECT_VERSION"
+echo "Parent UUID: $DTRACK_PARENT_UUID"
 echo "SBOM: $SBOM_FILE"
 echo "Server: $DTRACK_URL"
 
-RESPONSE=$(curl --silent --show-error --fail-with-body --connect-timeout 10 --max-time 120 --request POST "${DTRACK_URL%/}/api/v1/bom" --header "X-Api-Key: ${DTRACK_API_KEY}" --form "autoCreate=true" --form "projectName=${DTRACK_PROJECT_NAME}" --form "projectVersion=${PROJECT_VERSION}" --form "bom=@${SBOM_FILE};type=application/json")
+RESPONSE=$(curl --silent --show-error --fail-with-body --connect-timeout 10 --max-time 120 --request POST "${DTRACK_URL%/}/api/v1/bom" --header "X-Api-Key: ${DTRACK_API_KEY}" --form "autoCreate=true" --form "projectName=${DTRACK_PROJECT_NAME}" --form "projectVersion=${PROJECT_VERSION}" --form "parentUUID=${DTRACK_PARENT_UUID}" --form "isLatest=true" --form "bom=@${SBOM_FILE};type=application/json")
 
 TOKEN=$(echo "$RESPONSE" | python3 -c 'import json, sys; print(json.load(sys.stdin)["token"])')
 
@@ -623,128 +649,120 @@ echo "Processing token: $TOKEN"
 echo "Vulnerability analysis will be performed asynchronously."
 ```
 
-#### 6.4.4. Принцип работы
+#### 6.4.5. Принцип работы скрипта
 
 Скрипт выполняет следующие действия:
 
 1. Проверяет наличие обязательных переменных окружения.
-2. Проверяет наличие и содержимое файла SBOM.
-3. Использует Git commit SHA в качестве версии проекта.
-4. Отправляет SBOM через REST API Dependency-Track.
-5. Получает токен обработки SBOM из JSON-ответа.
-6. Завершает Build Step после успешной передачи файла.
+2. Проверяет наличие сформированного SBOM и его размер.
+3. Использует Git commit SHA текущей сборки в качестве версии проекта.
+4. Формирует запрос к REST API Dependency-Track.
+5. Передаёт SBOM в формате CycloneDX JSON.
+6. Передаёт параметры автоматического создания дочернего проекта.
+7. Получает токен обработки SBOM.
+8. Выводит результат загрузки в Build Log.
 
-**Обработка ошибок и безопасность**
+#### 6.4.6. Параметры REST API
 
-| Параметр | Назначение |
-|---|---|
-| `set -e` | Завершение скрипта при необработанной ошибке выполнения команды |
-| `set -u` | Контроль использования неопределённых переменных |
-| `set -o pipefail` | Контроль ошибок внутри цепочек команд |
-| `set +x` | Отключение трассировки команд для предотвращения вывода API Key через shell tracing |
-| `${VARIABLE:?message}` | Проверка наличия и непустого значения обязательной переменной |
-| `[[ ! -s "$SBOM_FILE" ]]` | Проверка отсутствующего или пустого файла SBOM |
-| `--fail-with-body` | Возврат ошибки при HTTP-ответах с кодом 400 и выше с сохранением тела ответа |
-| `--connect-timeout 10` | Ограничение времени установления соединения до 10 секунд |
-| `--max-time 120` | Ограничение общего времени выполнения HTTP-запроса до 120 секунд |
-| `${DTRACK_URL%/}` | Удаление завершающего символа `/` из адреса сервера при его наличии |
+Загрузка SBOM осуществляется через следующий endpoint:
 
-Использование ограничений времени предотвращает длительное ожидание ответа при недоступности Dependency-Track.
+`POST /api/v1/bom`
 
-API Key передаётся через HTTP-заголовок `X-Api-Key` и хранится в защищённом параметре TeamCity.
+Для аутентификации используется HTTP-заголовок:
 
-Для production-окружения рекомендуется использовать HTTPS, чтобы обеспечить шифрование API Key и передаваемых данных при сетевом взаимодействии.
+`X-Api-Key`
 
-**Dependency-Track REST API**
+В запросе передаются следующие параметры:
 
-Для загрузки SBOM используется следующий API endpoint:
-
-```text
-POST /api/v1/bom
-```
-
-Параметры запроса:
-
-| Параметр | Назначение |
-|---|---|
-| `autoCreate` | Автоматическое создание проекта и его версии при их отсутствии |
-| `projectName` | Название проекта |
-| `projectVersion` | Git commit SHA текущей сборки |
-| `bom` | SBOM в формате CycloneDX JSON |
-
-При успешной загрузке Dependency-Track возвращает JSON-ответ, содержащий токен обработки:
-
-```json
-{
-    "token": "<processing-token>"
-}
-```
-
-Получение токена подтверждает успешную передачу SBOM для последующей обработки.
-
-Анализ программных компонентов и поиск уязвимостей выполняются асинхронно на стороне Dependency-Track.
-
-Pipeline не ожидает завершения анализа и продолжает выполнение после успешной передачи SBOM.
-
-#### 6.4.5. Версионирование проектов
-
-Каждая успешно загруженная ревизия приложения представлена в Dependency-Track отдельной версией проекта.
-
-```text
-cicd-lab
-├── <git-commit-sha-1>
-├── <git-commit-sha-2>
-├── <git-commit-sha-3>
-└── ...
-```
-
-Такой подход позволяет:
-
-- Отслеживать состав каждой версии приложения.
-- Сравнивать программные компоненты между версиями.
-- Анализировать появление новых уязвимостей.
-- Сохранять историю результатов анализа.
-- Отслеживать безопасность ранее опубликованных образов.
-
-#### 6.4.6. Обработка результатов
-
-Dependency-Track выполняет обработку SBOM и анализ программных компонентов асинхронно.
-
-Успешное завершение Build Step означает, что SBOM был принят Dependency-Track, но не означает завершения анализа уязвимостей.
-
-Pipeline не ожидает окончания анализа.
-
-В текущей архитектуре используются два независимых механизма контроля безопасности:
-
-| Компонент | Назначение | Блокирующая проверка |
+| Параметр | Значение | Назначение |
 |---|---|---|
-| Trivy | Проверка контейнерного образа перед публикацией | Да |
-| Dependency-Track | Непрерывный мониторинг программных компонентов | Нет |
+| `autoCreate` | `true` | Автоматическое создание проекта |
+| `projectName` | `${DTRACK_PROJECT_NAME}` | Название дочернего проекта |
+| `projectVersion` | `${PROJECT_VERSION}` | Git commit SHA |
+| `parentUUID` | `${DTRACK_PARENT_UUID}` | UUID родительского проекта |
+| `isLatest` | `true` | Назначение создаваемой версии актуальной |
+| `bom` | `sbom-report/sbom.json` | SBOM контейнерного образа |
 
-При обнаружении уязвимостей в Dependency-Track Pipeline автоматически не блокируется.
+Использование `parentUUID` обеспечивает создание новых версий приложения внутри родительского Collection Project.
 
-При этом ошибка передачи SBOM в Dependency-Track приводит к неуспешному завершению Build Step и предотвращает выполнение последующего шага `Push`.
+Параметр `isLatest=true` используется для автоматического назначения признака Latest при создании новой версии проекта.
 
-Таким образом, публикация контейнерного образа требует успешной передачи SBOM, но не зависит от результатов его асинхронного анализа.
+При повторной загрузке SBOM для существующей версии используется ранее созданный проект. Такая загрузка не является механизмом повторного назначения признака Latest.
 
-#### 6.4.7. Проверка результата
+#### 6.4.7. Организация проектов в Dependency-Track
 
-После успешного выполнения Build Step откройте веб-интерфейс Dependency-Track:
+В результате выполнения Build Step формируется следующая иерархия:
 
-`Projects → cicd-lab`
+```text
+cicd-lab (Collection Project)
+│
+├── cicd-lab (Git commit SHA 1)
+├── cicd-lab (Git commit SHA 2)
+├── cicd-lab (Git commit SHA 3)
+└── cicd-lab (Git commit SHA 4) [Latest]
+```
 
-Выберите версию проекта, соответствующую Git commit SHA текущей сборки.
+Родительский Collection Project использует следующую логику агрегации:
 
-После завершения обработки SBOM будут доступны:
+`Aggregate direct children marked as latest`
 
-- Перечень программных компонентов.
-- Версии используемых зависимостей.
-- Обнаруженные уязвимости.
-- Распределение уязвимостей по уровням критичности.
-- Информация о лицензиях компонентов при наличии соответствующих данных.
-- Risk Score.
+Это позволяет отображать метрики актуальной версии приложения, сохраняя историю предыдущих сборок и результаты их анализа.
 
-Dependency-Track продолжает анализировать зарегистрированные компоненты независимо от выполнения CI/CD Pipeline, позволяя обнаруживать новые уязвимости в ранее собранных версиях приложения.
+Предыдущие активные версии остаются доступными для непрерывного мониторинга уязвимостей.
+
+Признак Latest обозначает актуальную зарегистрированную сборку, а не факт её успешной публикации или развёртывания.
+
+Для отображения иерархии проектов в интерфейсе Dependency-Track необходимо отключить параметр:
+
+`Show flat project view`
+
+#### 6.4.8. Обработка ошибок
+
+Build Step завершается с ошибкой в следующих случаях:
+
+| Причина | Результат |
+|---|---|
+| Отсутствует обязательный параметр | Завершение скрипта с ошибкой |
+| SBOM отсутствует или пуст | Завершение скрипта с ошибкой |
+| API Server недоступен | Завершение скрипта с ошибкой |
+| Ошибка аутентификации | Завершение скрипта с ошибкой |
+| Недостаточно разрешений | Завершение скрипта с ошибкой |
+| REST API возвращает HTTP-ошибку | Завершение скрипта с ошибкой |
+| Ошибка извлечения токена обработки SBOM из ответа API | Завершение скрипта с ошибкой |
+
+В случае ошибки загрузки SBOM последующие Build Steps публикации и подписания контейнерного образа не выполняются при условии их настройки на выполнение только после успешного завершения предыдущих шагов.
+
+#### 6.4.9. Ожидаемый результат
+
+После успешного выполнения Build Step:
+
+- SBOM передан в Dependency-Track.
+- При регистрации новой версии приложения создаётся дочерний проект внутри родительского Collection Project.
+- Вновь созданная версия отмечается как Latest.
+- Получен токен обработки SBOM.
+- Dependency-Track выполняет асинхронный анализ программных компонентов.
+- Pipeline продолжает выполнение.
+
+Успешная загрузка SBOM подтверждает принятие данных Dependency-Track, но не означает завершение анализа уязвимостей.
+
+#### 6.4.10. Роль Dependency-Track в CI/CD Pipeline
+
+В рамках текущей архитектуры Dependency-Track используется для непрерывного мониторинга безопасности программных компонентов.
+
+Результаты анализа Dependency-Track не являются блокирующим условием CI/CD Pipeline.
+
+При этом успешная передача SBOM является обязательным условием для продолжения Pipeline.
+
+Блокирующие проверки безопасности контейнерного образа выполняются на предыдущем этапе с использованием Trivy.
+
+| Механизм | Назначение | Блокирующий |
+|---|---|---|
+| Trivy Image Scan | Проверка безопасности контейнерного образа | Да |
+| Upload SBOM to Dependency-Track | Передача SBOM для последующего анализа | Да |
+| Dependency-Track Vulnerability Analysis | Асинхронный анализ уязвимостей | Нет |
+| Dependency-Track Continuous Monitoring | Непрерывный мониторинг зарегистрированных компонентов | Нет |
+
+Таким образом, Dependency-Track дополняет существующие механизмы Security Gate, обеспечивая непрерывный мониторинг безопасности программных компонентов после завершения CI/CD Pipeline.
 
 [← Вернуться к основной документации](../README.md#building-and-deployment) | [↑ К содержанию](#toc)
 
