@@ -247,15 +247,128 @@ TeamCity является центральным компонентом CI/CD Pi
 
 ---
 
+<a name="dependency-track"></a>
+
+## 4. Настройка Dependency-Track
+
+Dependency-Track используется для централизованного анализа программных компонентов, управления рисками цепочки поставок программного обеспечения (Software Supply Chain Security) и непрерывного мониторинга уязвимостей.
+
+В рамках проекта Dependency-Track дополняет проверки безопасности, выполняемые непосредственно в CI/CD Pipeline, позволяя обнаруживать новые уязвимости в ранее собранных версиях приложения.
+
+### 4.1. Общие настройки
+
+В рамках проекта используется Dependency-Track версии 5.2.2.
+
+Взаимодействие с системой осуществляется через два основных компонента:
+
+| Компонент | Назначение |
+|---|---|
+| Frontend | Управление проектами, компонентами и результатами анализа |
+| API Server | Обработка SBOM, анализ компонентов и взаимодействие с внешними системами через REST API |
+
+**Техническая документация:**
+
+- [Первоначальная настройка](docs/dependency-track.md#initial-configuration)
+- [Общие настройки](docs/dependency-track.md#general-settings)
+
+### 4.2. Источники уязвимостей
+
+Для получения актуальной информации об известных уязвимостях Dependency-Track использует несколько независимых источников данных.
+
+| Источник | Назначение |
+|---|---|
+| GitHub Advisories | Информация об уязвимостях программных зависимостей |
+| NVD | Информация об известных CVE и оценках CVSS |
+| OSV | Информация об уязвимостях компонентов open-source экосистем |
+| CISA KEV | Каталог известных эксплуатируемых уязвимостей |
+| ENISA EU KEV | Европейский каталог известных эксплуатируемых уязвимостей |
+
+Использование нескольких источников позволяет расширить покрытие анализа и учитывать дополнительные факторы при оценке рисков.
+
+**Техническая документация:**
+
+- [GitHub Advisories](docs/dependency-track.md#github-advisories)
+- [NVD](docs/dependency-track.md#nvd)
+- [OSV](docs/dependency-track.md#osv)
+- [CISA KEV](docs/dependency-track.md#cisa-kev)
+- [ENISA EU KEV](docs/dependency-track.md#enisa-eu-kev)
+
+### 4.3. Анализаторы программных компонентов
+
+Для обнаружения уязвимостей в зарегистрированных программных компонентах используются следующие анализаторы:
+
+| Анализатор | Назначение |
+|---|---|
+| Internal Analyzer | Анализ с использованием внутренней базы уязвимостей Dependency-Track |
+| Sonatype OSS Index | Анализ уязвимостей программных зависимостей через внешний REST API |
+| Trivy Analyzer | Анализ уязвимостей системных пакетов и программных библиотек |
+
+Источники уязвимостей предоставляют данные, а анализаторы выполняют сопоставление зарегистрированных программных компонентов с информацией об известных уязвимостях.
+
+**Техническая документация:**
+
+- [Internal Analyzer](docs/dependency-track.md#internal-analyzer)
+- [Sonatype OSS Index](docs/dependency-track.md#oss-index)
+- [Trivy Analyzer](docs/dependency-track.md#trivy-analyzer)
+
+### 4.4. Аутентификация и авторизация
+
+Для интеграции с TeamCity в рамках лабораторного окружения используется отдельная сервисная учётная запись с API Key ограниченного срока действия.
+
+Разрешения назначаются непосредственно сервисной учётной записи в соответствии с принципом наименьших привилегий (Principle of Least Privilege).
+
+| Permission | Назначение |
+|---|---|
+| `BOM_UPLOAD` | Загрузка SBOM |
+| `PROJECT_CREATION_UPLOAD` | Автоматическое создание проектов при загрузке SBOM |
+
+Team используется для логической группировки сервисных учётных записей.
+
+Для production-окружения могут рассматриваться дополнительные механизмы аутентификации, включая Workload Identity Federation и централизованное управление секретами.
+
+**Техническая документация:**
+
+- [Создание команды](docs/dependency-track.md#create-team)
+- [Создание сервисной учётной записи](docs/dependency-track.md#service-account)
+- [Настройка разрешений](docs/dependency-track.md#permissions)
+- [Настройка членства в команде](docs/dependency-track.md#team-membership)
+- [Создание API Key](docs/dependency-track.md#api-key)
+
+### 4.5. Интеграция с CI/CD Pipeline
+
+Dependency-Track интегрирован с Pipeline `2: Building & Deployment`.
+
+После успешного сканирования контейнерного образа сформированный SBOM в формате CycloneDX JSON автоматически передаётся в Dependency-Track.
+
+В качестве версии проекта используется Git commit SHA, обеспечивающий связь между исходным кодом, контейнерным образом и перечнем программных компонентов.
+
+Анализ зарегистрированных компонентов выполняется асинхронно и независимо от дальнейшего выполнения CI/CD Pipeline.
+
+| Механизм | Назначение |
+|---|---|
+| Trivy Security Gate | Предотвращение публикации контейнерных образов, не прошедших проверки безопасности |
+| Dependency-Track | Непрерывный мониторинг безопасности программных компонентов |
+
+В текущей архитектуре результаты анализа Dependency-Track не являются блокирующим условием CI/CD Pipeline.
+
+При этом успешная передача SBOM является обязательным условием для дальнейшей публикации контейнерного образа.
+
+**Техническая документация:**
+
+- [Интеграция Dependency-Track с TeamCity](docs/dependency-track.md#teamcity-integration)
+- [Настройка Build Step Upload SBOM](docs/building-and-deployment.md#upload-sbom)
+
+---
+
 <a name="pr-code-reviewer"></a>
 
-## 4. Pipeline 1 — PR Code Reviewer
+## 10. Pipeline 1 — PR Code Reviewer
 
 Первый Pipeline предназначен для автоматизированного контроля качества и безопасности исходного кода перед объединением изменений в ветку `preprod`.
 
 Pipeline запускается автоматически при создании или обновлении Pull Request, а также при изменениях в ветке `preprod`.
 
-### 4.1. Интеграция с GitHub
+### 10.1. Интеграция с GitHub
 
 Для взаимодействия TeamCity с GitHub используются следующие механизмы:
 
@@ -274,7 +387,7 @@ Pipeline запускается автоматически при создани
 - [Настройка Build Triggers](docs/pr-code-reviewer.md#build-triggers)
 - [Настройка Commit Status Publisher](docs/pr-code-reviewer.md#commit-status-publisher)
 
-### 4.2. Последовательность выполнения Pipeline
+### 10.2. Последовательность выполнения Pipeline
 
 Pipeline состоит из семи последовательных Build Steps:
 
@@ -310,7 +423,7 @@ Trivy Dependency Scan
 | [Coverage Report](docs/pr-code-reviewer.md#coverage-report) | Формирование HTML-отчёта о покрытии кода |
 | [Trivy Dependency Scan](docs/pr-code-reviewer.md#trivy-dependency-scan) | Сканирование зависимостей на уязвимости |
 
-### 4.3. Quality & Security Gates
+### 10.3. Quality & Security Gates
 
 Первый Pipeline обеспечивает контроль качества и безопасности исходного кода на нескольких уровнях.
 
@@ -341,7 +454,7 @@ Trivy Dependency Scan
 
 Результат проверки публикуется в GitHub, где используется правилами защиты ветки `preprod` для блокировки объединения Pull Request.
 
-### 4.4. Отчёты и результаты проверок
+### 10.4. Отчёты и результаты проверок
 
 Для анализа результатов выполнения Pipeline используются отчёты TeamCity и SonarQube.
 
@@ -360,7 +473,7 @@ Trivy Dependency Scan
 - [Настройка Build Report Tabs](docs/pr-code-reviewer.md#build-report-tabs)
 - [Проверка работы Pipeline](docs/pr-code-reviewer.md#pipeline-verification)
 
-### 4.5. Результат выполнения Pipeline
+### 10.5. Результат выполнения Pipeline
 
 При успешном прохождении обязательных проверок Pull Request может быть объединён с веткой `preprod` при выполнении остальных требований GitHub Ruleset.
 
@@ -372,13 +485,13 @@ Trivy Dependency Scan
 
 <a name="building-and-deployment"></a>
 
-## 5. Pipeline 2 — Building & Deployment
+## 11. Pipeline 2 — Building & Deployment
 
 Второй Pipeline предназначен для автоматизации сборки контейнерного образа приложения, проверки его безопасности, формирования SBOM, публикации в контейнерном реестре и цифрового подписания.
 
 Pipeline работает только с веткой `preprod` и автоматически запускается после успешного завершения Pipeline `1: PR code reviewer` для обновлённой интеграционной ветки.
 
-### 5.1. Организация Build Chain
+### 11.1. Организация Build Chain
 
 Для взаимодействия между двумя Pipeline используются механизмы TeamCity:
 
@@ -401,7 +514,7 @@ Finish Build Trigger исключает автоматический запус�
 - [Настройка Snapshot Dependency](docs/building-and-deployment.md#snapshot-dependency)
 - [Настройка Build Trigger](docs/building-and-deployment.md#build-trigger)
 
-### 5.2. Последовательность выполнения Pipeline
+### 11.2. Последовательность выполнения Pipeline
 
 Pipeline состоит из шести последовательных Build Steps:
 
@@ -433,7 +546,7 @@ Upload SBOM to Dependency-Track
 | [Push](docs/building-and-deployment.md#push) | Публикация контейнерного образа в Docker Hub |
 | [Cosign Sign & Verify](docs/building-and-deployment.md#cosign-sign-verify) | Цифровое подписание образа и проверка подписи |
 
-### 5.3. Container Image Security Gate
+### 11.3. Container Image Security Gate
 
 Перед публикацией контейнерного образа выполняется сканирование с помощью Trivy.
 
@@ -457,7 +570,7 @@ Upload SBOM to Dependency-Track
 
 Обнаруженные секреты и ошибки конфигурации включаются в отчёты, но в рамках текущей конфигурации не являются блокирующими условиями Security Gate.
 
-### 5.4. Software Supply Chain Security
+### 11.4. Software Supply Chain Security
 
 Для обеспечения прозрачности и безопасности цепочки поставок программного обеспечения используются следующие механизмы:
 
@@ -493,7 +606,7 @@ Dependency-Track дополняет проверки Trivy, позволяя о�
 - Привязывать цифровую подпись к конкретному образу.
 - Подготавливать образы для последующего безопасного развёртывания в Kubernetes.
 
-### 5.5. Версионирование контейнерных образов
+### 11.5. Версионирование контейнерных образов
 
 В качестве тега контейнерного образа используется Git commit SHA.
 
@@ -511,7 +624,7 @@ docker.io/<docker-user>/<docker-repo>:<git-commit-sha>
 
 Использование Git commit SHA позволяет идентифицировать конкретную версию приложения и упрощает выбор версии при необходимости отката.
 
-### 5.6. Отчёты и артефакты
+### 11.6. Отчёты и артефакты
 
 По результатам выполнения Pipeline формируются следующие артефакты:
 
@@ -523,7 +636,7 @@ docker.io/<docker-user>/<docker-repo>:<git-commit-sha>
 
 Артефакты публикуются в TeamCity даже при неуспешном завершении сборки, если соответствующие файлы были сформированы.
 
-### 5.7. Результат выполнения Pipeline
+### 11.7. Результат выполнения Pipeline
 
 При успешном завершении Pipeline:
 
