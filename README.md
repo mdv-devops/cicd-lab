@@ -150,21 +150,19 @@ feature/add-endpoint ── Pull Request ──┐
 feature/fix-bug ─────── Pull Request ──┤
                                       │
                                       ▼
-                              PR Code Reviewer
-                                      │
                               Quality & Security
                                     Gates
                                       │
-                                      ▼
-                               preprod (protected)
-                                      │
                               PR Code Reviewer
+                                      │
+                                      ▼
+                                   preprod
                                       │
                                       ▼
                              Building & Deployment
                                       │
                                       ▼
-                                 Pull Request
+                                Pull Request
                                       │
                                       ▼
                                      main
@@ -212,114 +210,42 @@ GitHub использует результат выполнения Pipeline `1:
 
 - [Настройка защиты ветки main](docs/github.md#main-protection)
 
----
+---git diff --cached --stat
+
+<a name="teamcity-configuration"></a>
 
 ## 3. Настройка TeamCity
 
-TeamCity используется для автоматизации проверки исходного кода, запуска тестов, анализа безопасности, сборки и публикации Docker-образов.
+TeamCity является центральным компонентом CI/CD Pipeline и отвечает за автоматизацию процессов проверки качества и безопасности исходного кода, сборки и публикации контейнерных образов.
 
-### 3.1. Создание проекта
+### 3.1. Организация проекта
 
-**Шаг 1. Создание нового проекта**
+В TeamCity используется единый проект `global`, внутри которого настроены две Build Configurations:
 
-Откройте TeamCity и перейдите в раздел:
-
-`Administration → Projects`
-
-Нажмите `Create project` и выберите создание проекта вручную.
-
-Укажите следующие параметры:
-
-| Параметр | Значение |
+| Build Configuration | Назначение |
 |---|---|
-| Name | `global` |
-| Project ID | `Global` |
-| Description | Оставить пустым |
+| `1: PR code reviewer` | Сборка приложения, тестирование, анализ качества кода и сканирование зависимостей |
+| `2: Building & Deployment` | Сборка Docker-образа, сканирование, формирование SBOM, публикация и цифровая подпись |
 
-Сохраните проект.
+**Техническая документация:**
 
-**Шаг 2. Проверка общих настроек**
+- [Создание проекта TeamCity](docs/teamcity.md#project-creation)
 
-Откройте:
+### 3.2. Подключение GitHub
 
-`Administration → Projects → global → General`
+Для интеграции TeamCity с GitHub используются VCS Roots, обеспечивающие получение исходного кода и отслеживание изменений в репозитории.
 
-Убедитесь, что проект создан с указанными параметрами.
+Для аутентификации используется GitHub Personal Access Token (PAT).
 
-Дополнительные шаблоны настроек (`Default template` и `Enforced settings template`) в нашем примере не используются.
+Основной веткой для выполнения CI/CD Pipeline является `preprod`.
 
-В дальнейшем внутри проекта будут созданы две Build Configurations:
+**Техническая документация:**
 
-1. **PR code reviewer** — сборка приложения, тестирование, анализ качества кода и поиск уязвимостей.
-2. **Building & Deployment** — сборка Docker-образа, сканирование, формирование SBOM, публикация и цифровая подпись.
+- [Настройка VCS Root](docs/teamcity.md#vcs-root)
+- [Настройка аутентификации](docs/teamcity.md#vcs-authentication)
+- [Проверка подключения](docs/teamcity.md#test-vcs-connection)
 
-Каждая конфигурация будет настроена отдельно.
-
-### 3.2. Подключение GitHub через VCS Root
-
-Для получения исходного кода из GitHub необходимо настроить **VCS Root** — подключение, через которое TeamCity получает доступ к Git-репозиторию и отслеживает изменения.
-
-VCS Root создаётся на уровне проекта и может использоваться несколькими Build Configurations.
-
-**Шаг 1. Создание VCS Root**
-
-Откройте TeamCity и перейдите в настройки проекта:
-
-`Administration → Projects → global → VCS Roots`
-
-Нажмите `Create VCS Root` и выберите тип системы контроля версий `Git`.
-
-В разделе `General Settings` укажите следующие параметры:
-
-| Параметр | Значение |
-|---|---|
-| VCS root name | `cicd-lab-vcs` |
-| VCS root ID | `Global_CicdLabVcs` |
-| Fetch URL | `https://github.com/mdv-devops/cicd-lab.git` |
-| Default branch | `refs/heads/preprod` |
-| Branch specification | Оставить пустым |
-
-**Fetch URL** — адрес Git-репозитория, из которого TeamCity будет получать исходный код.
-
-**Default branch** — ветка, используемая TeamCity по умолчанию для отслеживания изменений и выполнения сборок.
-
-**Branch specification** — позволяет дополнительно указать ветки, которые TeamCity должен отслеживать. В нашем примере поле оставляем пустым. Обнаружение Pull Requests настроим отдельно.
-
-**Шаг 2. Настройка аутентификации**
-
-В разделе `Authentication Settings` выберите:
-
-`Authentication method → Password / personal access token`
-
-Заполните параметры:
-
-| Параметр | Значение |
-|---|---|
-| Authentication method | `Password / personal access token` |
-| Username | `Teamcity` |
-| Password / access token | GitHub Personal Access Token |
-
-Для подключения используется GitHub Personal Access Token (PAT).
-
-Токен позволяет TeamCity обращаться к GitHub по HTTPS и получать исходный код репозитория.
-
-Для чтения репозитория достаточно соответствующих разрешений на доступ к его содержимому. Дополнительные права следует предоставлять только при необходимости.
-
-**Важно:** токен не должен храниться в исходном коде проекта или публиковаться в документации. Используйте защищённое поле TeamCity для хранения учётных данных.
-
-**Шаг 3. Сохранение и проверка подключения**
-
-После заполнения параметров проверьте доступность репозитория с помощью `Test connection`.
-
-При успешном подключении сохраните VCS Root.
-
-В списке VCS Roots проекта должен появиться:
-
-`cicd-lab-vcs`
-
-Созданный VCS Root будет использоваться для получения исходного кода в Build Configurations.
-
-
+---
 
 # === 1: PR code reviewer ===
 
