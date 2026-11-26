@@ -90,7 +90,7 @@
 Конкретные версии NuGet-пакетов определяются файлами `.csproj` проекта.
 
 ---
-
+<a name="git-workflow"></a>
 ## 2. Настройка GitHub
 
 ### 2.1. Организация репозитория и веток
@@ -145,124 +145,74 @@
 ### 2.3. Схема работы с ветками
 
 ```text
-feature/add-endpoint ── PR + Approve ──┐
+feature/add-endpoint ── Pull Request ──┐
                                       │
-feature/fix-bug ─────── PR + Approve ──┤
+feature/fix-bug ─────── Pull Request ──┤
+                                      │
+                                      ▼
+                              PR Code Reviewer
+                                      │
+                              Quality & Security
+                                    Gates
+                                      │
                                       ▼
                                preprod (protected)
                                       │
-                                      │ Pull Request
+                              PR Code Reviewer
+                                      │
                                       ▼
-                                 main (protected)
+                             Building & Deployment
+                                      │
+                                      ▼
+                                 Pull Request
+                                      │
+                                      ▼
+                                     main
 ```
+
+Такая схема позволяет разделить повседневную разработку, интеграцию изменений и подготовку основной версии приложения.
+
+Изменения проходят автоматизированные проверки до попадания в `preprod`, а контейнерный образ собирается только из ревизии исходного кода, успешно прошедшей проверки.
+
+Перенос изменений в `main` выполняется через отдельный Pull Request.
 
 Такая схема позволяет разделить повседневную разработку и основную ветку проекта.
 
 Изменения сначала проходят проверку и согласование в `preprod`, а затем переносятся в `main` через отдельный Pull Request.
 
-### 2.4. Настройка защиты ветки `preprod`
+### 2.4. Защита ветки `preprod`
 
-Ветка `preprod` используется для объединения изменений разработчиков перед их переносом в `main`.
+Для защиты интеграционной ветки используются GitHub Rulesets.
 
-Для защиты ветки применяется GitHub Ruleset, который запрещает прямое внесение изменений, требует создания Pull Request и успешного прохождения автоматических проверок.
+Основные механизмы защиты:
 
-**Шаг 1. Создание Ruleset**
+- Запрет прямого внесения изменений.
+- Обязательное создание Pull Request.
+- Обязательное успешное прохождение проверок TeamCity.
+- Контроль ручных одобрений согласно настройкам Ruleset.
+- Обязательное завершение обсуждений.
+- Запрет удаления ветки.
+- Запрет принудительной перезаписи истории.
 
-Откройте репозиторий и перейдите в:
+GitHub использует результат выполнения Pipeline `1: PR code reviewer` для определения возможности объединения Pull Request.
 
-`Settings → Rules → Rulesets → New ruleset → New branch ruleset`
+**Техническая документация:**
 
-Укажите следующие параметры:
+- [Создание и настройка Ruleset](docs/github.md#preprod-protection)
+- [Настройка обязательного Pull Request](docs/github.md#pull-request-rules)
+- [Настройка обязательных проверок TeamCity](docs/github.md#required-status-checks)
 
-| Параметр | Значение |
-|---|---|
-| Ruleset Name | `preprod-protection` |
-| Enforcement status | `Active` |
-| Bypass list | Пустой |
-| Target branches | `preprod` |
+### 2.5. Защита ветки `main`
 
-Пустой `Bypass list` означает, что пользователям и приложениям не предоставлены исключения из правил защиты.
+Ветка `main` предназначена для хранения основной версии приложения.
 
-**Шаг 2. Настройка основных правил**
+Настройка правил защиты этой ветки будет завершена после реализации автоматизированного развёртывания приложения в Kubernetes и проверок после развёртывания.
 
-В разделе `Branch rules` включите:
+**Техническая документация:**
 
-| Настройка | Назначение |
-|---|---|
-| Restrict deletions | Запрещает удаление ветки |
-| Require a pull request before merging | Требует Pull Request для внесения изменений |
-| Require status checks to pass | Требует успешных автоматических проверок |
-| Block force pushes | Запрещает принудительную перезапись истории |
+- [Настройка защиты ветки main](docs/github.md#main-protection)
 
-Остальные правила оставьте выключенными.
-
-**Шаг 3. Настройка обязательного Pull Request**
-
-Раскройте:
-
-`Require a pull request before merging → Show additional settings`
-
-Укажите следующие значения:
-
-| Параметр | Значение |
-|---|---|
-| Required approvals | `1` |
-| Dismiss stale pull request approvals when new commits are pushed | Включено |
-| Require review from specific teams | Выключено |
-| Require review from Code Owners | Выключено |
-| Require approval of the most recent reviewable push | Выключено |
-| Require conversation resolution before merging | Включено |
-| Require an additional approval for unattributed Copilot pull requests | Включено |
-| Allowed merge methods | `Merge` |
-
-**Required approvals: 1**
-
-Для объединения Pull Request требуется минимум одно одобрение от другого участника, имеющего право проверять изменения.
-
-**Dismiss stale pull request approvals**
-
-Если после получения Approve разработчик добавит новые коммиты, предыдущие одобрения будут сброшены. Pull Request потребуется проверить повторно.
-
-**Require conversation resolution before merging**
-
-Все обсуждения изменений в коде должны быть завершены перед объединением Pull Request.
-
-**Allowed merge methods: Merge**
-
-При объединении Pull Request все его коммиты видны в целевой ветке.
-
-**Шаг 4. Настройка обязательных проверок TeamCity**
-
-Раскройте:
-
-`Require status checks to pass → Show additional settings`
-
-Установите следующие параметры:
-
-| Параметр | Значение |
-|---|---|
-| Require branches to be up to date before merging | Выключено |
-| Do not require status checks on creation | Выключено |
-| Required status checks | `1: PR code reviewer (global)` |
-| Source | `Any source` |
-
-Проверка `1: PR code reviewer (global)` используется GitHub для контроля результата CI-сборки.
-
-Если проверка не прошла или не завершилась, GitHub блокирует объединение Pull Request.
-
-Параметр `Require branches to be up to date before merging` выключен. Поэтому GitHub не требует предварительного обновления рабочей ветки до последнего состояния `preprod`, если обязательная проверка уже прошла успешно.
-
-**Шаг 5. Сохранение правил**
-
-Нажмите `Save changes`.
-
-После применения правил teamleader вручную сможет объединить Pull Request в `preprod` только после выполнения обязательных условий: успешной проверки CI и получения Approve от Teamcity.
-
-Прямые изменения, удаление ветки и принудительная перезапись истории будут запрещены.
-
-### 2.5. Настройка защиты ветки `main`
-
-*Настройка защиты ветки main будет описана после реализации процесса развёртывания приложения в Kubernetes, выполнения проверок после развёртывания и определения механизма автоматического создания Pull Request из preprod в main.*
+---
 
 ## 3. Настройка TeamCity
 
