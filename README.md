@@ -210,7 +210,7 @@ GitHub использует результат выполнения Pipeline `1:
 
 - [Настройка защиты ветки main](docs/github.md#main-protection)
 
----git diff --cached --stat
+---
 
 <a name="teamcity-configuration"></a>
 
